@@ -1,6 +1,6 @@
 """
 Processes for spatial analog calculation 
-Author: Nils Hempelmann (info@nilshempelmann.de)
+Author: Nils Hempelmann (info@nilshempelmann.de), David Huard (huard.david@ouranos.ca)
 """
 #import tarfile
 #import os
@@ -24,23 +24,35 @@ class SDMProcess(WPSProcess):
             #    {"title": "Documentation", "href": "http://flyingpigeon.readthedocs.io/en/latest/"},
             #   ],
 
-            abstract="Spatial analogs based on climate indices",
+            abstract="Spatial analogs based on the comparison of climate indices. The algorithm compares the distribution of the target indices with the distribution of spatially distribution reference indices. The return value is the spatially distributed Kullback-Leibler divergence, an information-theoretic measure of the differences between distribution. A KL divergence of 0 signifies that both distributions are equal.",
             statusSupported=True,
             storeSupported=True
             )
 
         # Literal Input Data
         # ------------------
+        
+        
+        
         self.resources = self.addComplexInput(
             identifier="resources",
-            title="NetCDF File",
-            abstract="NetCDF File",
+            title="Reference NetCDF File",
+            abstract="Reference NetCDF file storing the variables required for the computation of the indices.",
             minOccurs=1,
             maxOccurs=500,
             maxmegabites=50000,
             formats=[{"mimeType":"application/x-netcdf"}],
             )
 
+        self.resources = self.addComplexInput(
+            identifier="resources",
+            title="Target NetCDF File",
+            abstract="Target NetCDF file storing the variables required for the computation of the indices at the target site over the target period.",
+            minOccurs=1,
+            maxOccurs=500,
+            maxmegabites=50000,
+            formats=[{"mimeType":"application/x-netcdf"}],
+            )
         # self.BBox = self.addBBoxInput(
         #     identifier="BBox",
         #     title="Bounding Box",
@@ -53,8 +65,8 @@ class SDMProcess(WPSProcess):
 
         self.coords = self.addLiteralInput(
           identifier="coords",
-          title="Coordinates",
-          abstract="a comma seperated touple of WGS85 lon,lat decimal coorinate",
+          title="Target site coordinates",
+          abstract="Comma separated tuple of WGS85 lon,lat decimal coordinates.",
           default="2.356138, 48.846450",
           type=type(''),
           minOccurs=1,
@@ -63,8 +75,8 @@ class SDMProcess(WPSProcess):
 
         self.input_indices = self.addLiteralInput(
             identifier="input_indices",
-            title="Indices",
-            abstract="Climate indices related to growth conditions of tree species",
+            title="Indices at the target site.",
+            abstract="One or more climate indices to compute over the reference and target data.",
             default=['TG_JJA', 'TNn_Jan'],
             type=type(''),
             minOccurs=1,

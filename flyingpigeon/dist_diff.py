@@ -1,5 +1,14 @@
 # -*- encoding: utf8 -*-
 """
+Methods to compute differences between distributions
+====================================================
+
+ * kldiv
+
+
+
+kldiv
+-----
 Empirical Kullback-Leibler divergence for continuous distributions.
 
 In information theory, the Kullback–Leibler divergence is a non-symmetric 
@@ -21,27 +30,30 @@ true values, the paper proves that the K-L divergence almost surely does converg
 value. 
 
 
-
 References
 ----------
 
 [1] Kullback-Leibler Divergence Estimation of Continuous Distributions (2008). Fernando Pérez-Cruz.
 
+
+
 :author: David Huard
 :institution: Ouranos inc. 
-
 """
 
-# TODO: Vectorize the cdf methods in the 1D case.
-
-__all__ = ['KLDiv']
+__all__ = ['kldiv',]
 
 import bisect
 import numpy as np
 
-#
-def KLDiv(x, y, k=1):
+def kldiv(x, y, k=1):
     """Compute the Kullback-Leibler divergence between two multivariate samples.
+    
+        D(P||Q) = \frac{d}{n} \sum_i^n \log{\frac{r_k(x_i)}{s_k(x_i)}} + \log{\frac{m}{n-1}}
+        
+    where r_k(x_i) and s_k(x_i) are, respectively, the euclidean distance 
+    to the kth neighbour of x_i in the x array (excepting x_i) and
+    in the y array.  
 
     Parameters
     ----------
@@ -49,8 +61,8 @@ def KLDiv(x, y, k=1):
       Samples from distribution P, which typically represents the true 
       distribution. 
     y : 2D array (m,d)
-      Samples from distribution Q, which typically represents the approximate
-      distribution.
+      Samples from distribution Q, which typically represents the 
+      approximate       distribution.
     k : int or sequence
       The kth neighbours to look for when estimating the density of the
       distributions. Default to 1, which can be noisy. 

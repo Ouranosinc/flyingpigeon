@@ -33,7 +33,7 @@ class DistributionDifferenceProcess(WPSProcess):
         ###########
         ### INPUTS
         ###########
-        self.resources = self.addLiteralInput(
+        self.algo = self.addLiteralInput(
             identifier="algo",
             title="Algorithm",
             abstract="Name of algorithm to use to compute differences.",
@@ -44,7 +44,7 @@ class DistributionDifferenceProcess(WPSProcess):
             maxOccurs=1,
           )
       
-        self.resources = self.addComplexInput(
+        self.nc_p = self.addComplexInput(
             identifier="nc_p",
             title="NetCDF file for P",
             abstract="NetCDF file  holding the sample from P, the 'true' distribution.",
@@ -54,7 +54,7 @@ class DistributionDifferenceProcess(WPSProcess):
             formats=[{"mimeType":"application/x-netcdf"}],
             )
 
-        self.resources = self.addComplexInput(
+        self.nc_q = self.addComplexInput(
             identifier="nc_q",
             title="NetCDF file for Q",
             abstract="NetCDF file  holding the different samples from Q, the 'approximate' distribution.",
@@ -68,7 +68,7 @@ class DistributionDifferenceProcess(WPSProcess):
         ### OUTPUTS
         ###########
 
-        self.output_netcdf = self.addComplexOutput(
+        self.ncout = self.addComplexOutput(
             identifier="ncout",
             title="Distribution differences",
             abstract="Measures of the differences between the distribution of P and Q.",
@@ -84,18 +84,12 @@ class DistributionDifferenceProcess(WPSProcess):
         self.status.set('Start process', 0)
       
         try: 
-            logger.info('reading the arguments')
-            resources = self.getInputValues(identifier='resources')
-            #taxon_name = self.getInputValues(identifier='taxon_name')[0]
-            #period = self.period.getValue()
-            coords = self.getInputValues(identifier='coords')[0]
-            period = self.getInputValues(identifier='period')[0]
-            coordinate = [float(n) for n in coords.split(',')]
+            logger.info('Reading the arguments')
+            nc_p = self.getInputValues(identifier='nc_p')
+            nc_q = self.getInputValues(identifier='nc_q')
+            algo = self.getInputValues(identifier='algo')
+                       
+            logger.info("Inputs:\nnc_p: {0}\nc_q: {1}\nalgo: {2}".format(nc_p, nc_q, algo))
             
-            #indices = self.input_indices.getValue()
-            indices = self.getInputValues(identifier='input_indices')
-            logger.info("indices = %s ", indices)
-            
-            archive_format = self.archive_format.getValue()
-      except Exception as e: 
-        logger.error('failed to read in the arguments %s ' % e)
+        except Exception as e: 
+            logger.error('failed to read in the arguments %s ' % e)
