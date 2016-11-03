@@ -4,7 +4,7 @@ Methods to compute differences between distributions
 ====================================================
 
  * kldiv
-
+ * others to be implemented, see Grenier, Patrick, et al. "An assessment of six dissimilarity metrics for climate analogs." Journal of Applied Meteorology and Climatology 52.4 (2013): 733-752.
 
 
 kldiv
@@ -65,7 +65,7 @@ def kldiv(x, y, k=1):
       approximate       distribution.
     k : int or sequence
       The kth neighbours to look for when estimating the density of the
-      distributions. Default to 1, which can be noisy. 
+      distributions. Defaults to 1, which can be noisy. 
 
           
     Returns

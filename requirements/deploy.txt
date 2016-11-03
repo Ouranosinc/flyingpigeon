@@ -3,6 +3,8 @@ cdo
 pandas
 pygbif>=0.1.4
 pyyaml
+scipy
 scikit-learn
 statsmodels
 wget
+

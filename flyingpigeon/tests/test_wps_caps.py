@@ -11,6 +11,7 @@ def test_caps():
     expected_names = [
         'analogs_detection',
         'analogs_viewer',
+        'distribution_similarity',
         'fetch',
         'indices_percentile',
         'indices_simple',

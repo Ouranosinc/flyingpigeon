@@ -12,6 +12,7 @@ __all__ = [
         "wps_analogs_model",
         "wps_analogs_compare",
         "wps_analogs_viewer",
+        "wps_distribution_similarity",
         "wps_segetalflora",
         "wps_sdm_gbif",
         "wps_sdm_csv",
