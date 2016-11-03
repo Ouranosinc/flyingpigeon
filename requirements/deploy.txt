@@ -2,15 +2,9 @@
 #cdo
 #pandas=0.18
 pygbif>=0.1.4
-<<<<<<< HEAD
 pyyaml
 scipy
 scikit-learn
 statsmodels
-=======
-#pyyaml
-#scikit-learn
-#statsmodels
->>>>>>> master
 wget
 
