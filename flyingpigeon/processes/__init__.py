@@ -12,7 +12,6 @@ __all__ = [
         "wps_analogs_model",
         "wps_analogs_compare",
         "wps_analogs_viewer",
-        "wps_distribution_similarity",
         "wps_segetalflora",
         "wps_sdm_gbif",
         "wps_sdm_csv",
@@ -23,6 +22,7 @@ __all__ = [
         "wps_c4i_simple_indice",
 # processes under development     
        "wps_spatial_analog",
+       "wps_distribution_similarity",
 #        "wps_eobs2cordex",
 
 # TODO: c4i processes with multiple input sources

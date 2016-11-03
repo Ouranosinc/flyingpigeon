@@ -10,12 +10,12 @@ from pywps.Process import WPSProcess
 import logging
 logger = logging.getLogger(__name__)
 
-from flyingpigeon.sdm import _SDMINDICES_
+
 
 class DistributionSimilarityProcess(WPSProcess):
     
-def __init__(self):
-  WPSProcess.__init__(
+  def __init__(self):
+    WPSProcess.__init__(
       self,
       identifier = "distribution_similarity",
       title = "Similarity between distributions",
@@ -31,7 +31,7 @@ def __init__(self):
   ###########
   ### INPUTS
   ###########
-  self.algo = self.addLiteralInput(
+    self.algo = self.addLiteralInput(
       identifier="algo",
       title="Algorithm",
       abstract="Name of algorithm to use to compute differences.",
@@ -41,7 +41,7 @@ def __init__(self):
       minOccurs=1,
       maxOccurs=1,
     )
-self.vec_p = self.addComplexInput(
+    self.vec_p = self.addComplexInput(
       identifier="vec_p",
       title="List of values from P",
       abstract="",
@@ -51,7 +51,7 @@ self.vec_p = self.addComplexInput(
       formats=[{"mimeType":"json"}],
       )
 
-  self.vec_q = self.addComplexInput(
+    self.vec_q = self.addComplexInput(
       identifier="vec_q",
       title="List of values from Q",
       abstract="",
@@ -60,8 +60,8 @@ self.vec_p = self.addComplexInput(
       maxmegabites=50000,
       formats=[{"mimeType":"json"}],
       )
-"""
-  self.nc_p = self.addComplexInput(
+    """
+    self.nc_p = self.addComplexInput(
       identifier="nc_p",
       title="NetCDF file for P",
       abstract="NetCDF file  holding the sample from P, the 'true' distribution.",
@@ -71,7 +71,7 @@ self.vec_p = self.addComplexInput(
       formats=[{"mimeType":"application/x-netcdf"}],
       )
 
-  self.nc_q = self.addComplexInput(
+    self.nc_q = self.addComplexInput(
       identifier="nc_q",
       title="NetCDF file for Q",
       abstract="NetCDF file  holding the different samples from Q, the 'approximate' distribution.",
@@ -80,17 +80,17 @@ self.vec_p = self.addComplexInput(
       maxmegabites=50000,
       formats=[{"mimeType":"application/x-netcdf"}],
       )
-"""
+    """
   ###########
   ### OUTPUTS
   ###########
-  self.out = self.addLiteralOutput(
+    self.out = self.addLiteralOutput(
       identifier="out",
       title="Distribution difference",
       data_type='float',
       abstract="Measures of the difference between the distribution of P and Q.",
       )
-"""
+  """
   self.ncout = self.addComplexOutput(
       identifier="ncout",
       title="Distribution differences",
@@ -98,7 +98,7 @@ self.vec_p = self.addComplexInput(
       formats=[{"mimeType":"application/x-netcdf"}],
       asReference=True,
       )
-"""
+  """
 
     
   def execute(self):
