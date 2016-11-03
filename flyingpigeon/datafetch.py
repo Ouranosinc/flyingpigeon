@@ -20,10 +20,10 @@ _EOBSVARIABLES_ = ['tg', 'tx' , 'tn', 'rr']
 
 def reanalyses( start=1948, end=None, variable='slp', dataset='NCEP'):
   """
-  fetching the reanalysis data (NCEP, 20CR or ERA_20C) to local file system
+  Fetches the reanalysis data (NCEP, 20CR or ERA_20C) to local file system
   :param start: int for start year to fetch source data
   :param end: int for end year to fetch source data (if None, current year will be the end)
-  :param variable: variable name (default='slp'), geopotential hight is given as e.g. z700
+  :param variable: variable name (default='slp'), geopotential height is given as e.g. z700
   :param dataset: default='NCEP' 
   :return list: list of path/files.nc 
   """
@@ -50,7 +50,7 @@ def reanalyses( start=1948, end=None, variable='slp', dataset='NCEP'):
   else:
     level = None
 
-  print level
+  logger.info('level: %s' % level)
 
   try:
     for year in range(start, end + 1):
@@ -84,16 +84,16 @@ def reanalyses( start=1948, end=None, variable='slp', dataset='NCEP'):
         logger.debug(msg)
         raise Exception(msg)
 
-    logger.info('Obseration data fetched for %s files' % len(obs_data))
+    logger.info('Reanalyses data fetched for %s files' % len(obs_data))
   except Exception as e:
-    msg = "get_OBS module failed to fetch data %s " % e
+    msg = "get reanalyses module failed to fetch data %s " % e
     logger.debug(msg)
     raise Exception(msg)
 
-  if level == None: 
+  if level == None:
     data = obs_data
   else:
-    print ('get level')
+    logger.info('get level: %s' % level)
     data = get_level(obs_data, level=level)
   return data
 

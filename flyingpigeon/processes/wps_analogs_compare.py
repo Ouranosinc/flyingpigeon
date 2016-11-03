@@ -114,12 +114,11 @@ class AnalogsProcess(WPSProcess):
       maxOccurs=1,
       )
 
-
     self.normalize = self.addLiteralInput(
       identifier="normalize",
       title="normalization",
       abstract="Normalize by subtraction of annual cycle",
-      default='base',
+      default='own',
       type=type(''),
       minOccurs=1,
       maxOccurs=1,
@@ -365,7 +364,9 @@ class AnalogsProcess(WPSProcess):
     
     try:          
       if seacyc == True:
-        analogs.seacyc(archive, simulation, method=normalize)
+        seasoncyc_base , seasoncyc_sim = analogs.seacyc(archive, simulation, method=normalize)
+      else: 
+        seasoncyc_base , seasoncyc_sim = None
     except Exception as e:
       msg = 'failed to prepare seasonal cycle reference files %s ' % e
       logger.debug(msg)
@@ -385,7 +386,10 @@ class AnalogsProcess(WPSProcess):
     start_time = time.time() # measure write config ...
     
     try:  
-      config_file = analogs.get_configfile(files=files, 
+      config_file = analogs.get_configfile(
+        files=files,
+        seasoncyc_base = seasoncyc_base,
+        seasoncyc_sim = seasoncyc_sim, 
         timewin=timewin, 
         varname=var, 
         seacyc=seacyc, 

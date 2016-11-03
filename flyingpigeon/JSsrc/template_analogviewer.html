@@ -2,8 +2,8 @@
 <html>
 <!--
  ##########################################################################
- Cathy.Nangini@lsce.ipsl.fr
- https://github.com/katirg
+ Cathy.Nangini@lsce.ipsl.fr (https://github.com/katirg)
+ LSCE Data Visualization Group (https://github.com/LSCE-DataVisGroup)
  ##########################################################################
 -->
 
@@ -72,13 +72,60 @@
     var corrBinWidth = 0.1, disBinWidth = 100.;
     //====================================================================
     function init() {
+      //read config file produced by analogues detection process
+      d3.text("analogues_config_placeholder.txt", function(text) {
+        text_array = d3.csv.parseRows(text);
+      
+        //Find element containing param string
+        for (idx = 0; idx < text_array.length; idx++) {
+          t = text_array[idx].toString();
+          
+          if (t.indexOf('outputfile') != -1) idx_outputfile = idx;
+          if (t.indexOf('nanalog') != -1) idx_nanalog = idx;
+          if (t.indexOf('varname') != -1) idx_varname = idx;
+          if (t.indexOf('simsource') != -1) idx_simsource = idx;
+          if (t.indexOf('archisource') != -1) idx_archivesource = idx;
+          if (t.indexOf('predictordom') != -1) idx_bbox = idx;
+          if (t.indexOf('archiperiod') != -1) idx_refperiod = idx;
+        }
 
+        //Parameters to display in html (find by string match)
+        outputfile = text_array[idx_outputfile].toString().split("=").pop();
+        nanalog = text_array[idx_nanalog].toString().split("=").pop();
+        varname = text_array[idx_varname].toString().split("=").pop();
+        simsource = text_array[idx_simsource].toString().split("=").pop();
+        archivesource = text_array[idx_archivesource].toString().split("=").pop();
+        bbox = text_array[idx_bbox].toString().split("=").pop();
+        
+        startref = text_array[idx_refperiod][0].split('= "')[1];
+        if (startref != "dummy")
+          startref = startref.slice(8,10) + "/" + startref.slice(5,7) + "/" + startref.slice(0,4);
+  
+        endref = text_array[idx_refperiod][1];
+        if (endref.indexOf("dummy") === -1)
+          endref = endref.slice(8,10) + "/" + endref.slice(5,7) + "/" + endref.slice(0,4);
+        else endref = "dummy";
+        
+        $(".content .value-outputfile").html(outputfile);
+        $(".content .value-nanalog").html(nanalog);
+        $(".content .value-varname").html(varname);
+        $(".content .value-simsource").html(simsource);
+        $(".content .value-archivesource").html(archivesource);
+        $(".content .value-bbox").html(bbox);
+        $(".value-ref").html(startref + " - " + endref);
+      });
+
+      //read analogues data file produced by analogues detection process
       d3.tsv("analogues_placeholder.json", function(data) {
 
         var firstDate = data[0].dateRef + dataHour; //set time from midnight to noon
         var lastDate = data[Object.keys(data).length - 1].dateRef + dataHour;
         minDate = dateFormat.parse(firstDate);
         maxDate = dateFormat.parse(data[Object.keys(data).length - 1].dateRef + dataHour);
+
+        //Display for user
+        $(".value-sdate").html(datepickerDateFormat(minDate));
+        $(".value-edate").html(datepickerDateFormat(maxDate));
 
         //Set initial date range to display
         init_date0 = dateFormat.parse(data[0].dateRef + dataHour);
@@ -293,7 +340,7 @@
       var dateFormatForZoom = d3.time.format('%Y%m%d');
       var init_domain0 = dateFormatForZoom.parse("21000101"), 
           init_domain1 = dateFormatForZoom.parse("2100101");
-      var resolnLimit = 365; //Determines cutoff for month or day resoln (in days)    
+      var resolnLimit = 260; //Determines cutoff for month or day resoln (in days)    
 
       //Determine date resolution of poiChart
       //http://stackoverflow.com/questions/23953019/dc-js-group-top5-not-working-in-chart
@@ -442,8 +489,8 @@
       //-----------------------------------
       seasonsChart
         .width(5)
-        .height(85)
-        .radius(30)
+        .height(100)
+        .radius(45)
         .slicesCap(4)
         .innerRadius(5)
         .colors(seasonColours) //DJF, JJA, MAM, SON  
@@ -639,8 +686,8 @@
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li><a href="help.html" target="_blank">Help</a></li>
-            <li><a href="contact.html" target="_blank">Contact</a></li>
+            <li><a href="/flyingpigeon/static/html/help.html" target="_blank">Help</a></li>
+            <li><a href="/flyingpigeon/static/html/contact.html" target="_blank">Contact</a></li>
           </ul>
         </div>
         <!--/.nav-collapse -->
@@ -649,6 +696,20 @@
 
     <!-- Begin page content -->
     <div class="container">
+
+      <div class="row">
+        <div class="dc-chart col-md-12">
+          <div class="content">Calculated analogues file: <span class='value-outputfile'></span></div>
+          <div class="content">Number of analogues: <span class='value-nanalog'></span></div>
+          <div class="content">Var name: <span class='value-varname'></span></div>
+          <div class="content">Simulation source: <span class='value-simsource'></span></div>
+          <div class="content">Archive source: <span class='value-archivesource'></span></div>
+          <div class="content">bbox: <span class='value-bbox'></span></div>
+          <div class="content">Reference period: <span class='value-ref'></span></div>
+          <div>Full config file: <a href="analogues_config_placeholder.txt" target="_blank">click here</a></div>
+        </div>
+      </div>
+
       <div class="row">
         <div class="dc-chart col-md-8">
           <div class="dc-data-count" id="chart-count">
@@ -660,20 +721,21 @@
       <p></p>
 
       <div class="row">
-        <div class="dc-chart col-md-8">
-          <div class="dc-chart-title">Period of Interest (manual selection, format dd/mm/yyyy)</div>
+        <div class="dc-chart col-md-10">
+          <div class="dc-chart-title">Analysis period (manual selection, format dd/mm/yyyy)</div>
           <a id="dateReset" class="reset" href="javascript:poiChart.filterAll();dc.redrawAll();resetChart(poiChart);" style="display: none;">reset</a>
           <span class="reset" style="display: none;"></span>
           <br>
           <p>
-            Start Date: <input type="text" id="datepicker0"> End Date: <input type="text" id="datepicker1"></p>
-          <p>
+            Start Date (min: <span class='value-sdate'></span>) <input type="text" id="datepicker0">
+            End Date (max: <span class='value-edate'></span>) <input type="text" id="datepicker1">
+          </p>
         </div>
       </div>
 
       <div class="row">
         <div class="dc-chart col-md-8" id="chart-poi">
-          <div class="dc-chart-title">Period of Interest (chart selection)</div>
+          <div class="dc-chart-title">Analysis period (chart selection)</div>
           <a id="dateReset" class="reset" href="javascript:poiChart.filterAll();dc.redrawAll();resetChart(poiChart);" style="display: none;">reset</a>
           <span class="reset" style="display: none;"><span class="filter"></span></span>
           <br>
@@ -681,7 +743,7 @@
 
         <!--new Date(dateString[2], dateString[1] - 1, dateString[0]);-->
 
-        <div class="dc-chart col-md-1" id="chart-seasons">
+        <div class="dc-chart col-md-3" id="chart-seasons">
           <div class="dc-chart-title">Season</div>
           <a class="reset" href="javascript:seasonsChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
           <span class="reset" style="display: none;"><span class="filter"></span></span>
@@ -722,7 +784,7 @@
     <div class="container">
       <p class="text-muted credit">Created by <a target="_blank" href="http://www.lsce.ipsl.fr/en"><span title="Climate and Environment Sciences Laboratory" style="font-weight:bold;">LSCE</span></a>&nbsp;
         <a target="_blank" href="http://www.lsce.ipsl.fr/en"><img src="/flyingpigeon/static/img/LSCE_Icon.png" title="Climate and Environment Sciences Laboratory" /></a> and hosted by <a target="_blank" href="http://www.ipsl.fr/en"><span title="Institut Pierre Simon Laplace" style="font-weight:bold;">IPSL</span></a>&nbsp;
-        <a target="_blank" href="http://www.ipsl.fr/en"><img src="/flyingpigeon/static/img/IPSL_logo.png" title="Institut Pierre Simon Laplace" /></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Version 0.1 - 2016/02/15</p>
+        <a target="_blank" href="http://www.ipsl.fr/en"><img src="/flyingpigeon/static/img/IPSL_logo.png" title="Institut Pierre Simon Laplace" /></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Version 0.9 - Sept 2016</p>
     </div>
     <!-- /.container -->
   </div>

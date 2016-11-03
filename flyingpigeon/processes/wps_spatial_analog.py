@@ -88,7 +88,7 @@ class SDMProcess(WPSProcess):
         self.period = self.addLiteralInput(
             identifier="period",
             title="Reference period",
-            abstract="Reference period for climate condition (all = entire timeseries)",
+            abstract="Reference period for climate conditions (all = entire timeseries)",
             default="all",
             type=type(''),
             minOccurs=1,
@@ -99,7 +99,7 @@ class SDMProcess(WPSProcess):
         self.archive_format = self.addLiteralInput(
             identifier="archive_format",
             title="Archive format",
-            abstract="Result files will be compressed into archives. Choose an appropriate format",
+            abstract="Result files will be compressed into archives. Choose an appropriate format.",
             default="tar",
             type=type(''),
             minOccurs=1,
@@ -131,7 +131,7 @@ class SDMProcess(WPSProcess):
         self.output_example = self.addComplexOutput(
             identifier="output_example",
             title="Example Climate Analog",
-            abstract="an example netCDF file picked from the Archive to be displayed on WMS",
+            abstract="an example netCDF file picked from the archive to be displayed on WMS",
             formats=[{"mimeType":"application/x-netcdf"}],
             asReference=True,
             )
@@ -196,7 +196,7 @@ class SDMProcess(WPSProcess):
       try: 
         # sort indices
         indices_dic = sdm.sort_indices(ncs_indices)
-        logger.info('indice files sorted for %s Datasets' % len(indices_dic.keys()))
+        logger.info('indice files sorted for %s datasets' % len(indices_dic.keys()))
       except:
         msg = 'failed to sort indices'
         logger.debug(msg)
@@ -283,4 +283,3 @@ class SDMProcess(WPSProcess):
       self.output_info.setValue(statistics_infos)
 
       self.status.set('done', 100)
-      

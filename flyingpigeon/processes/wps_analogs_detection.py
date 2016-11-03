@@ -2,7 +2,6 @@ from datetime import date
 from pywps.Process import WPSProcess
 
 from flyingpigeon.datafetch import _PRESSUREDATA_
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -151,12 +150,14 @@ class AnalogsProcess(WPSProcess):
     # define the outputs
     ### ###################
 
-    self.config = self.addComplexOutput(
+    self.config = self.addLiteralOutput(
       identifier="config",
       title="Config File",
       abstract="Config file used for the Fortran process",
-      formats=[{"mimeType":"text/plain"}],
-      asReference=True,
+      default=None,
+      type=type(''),
+      #formats=[{"mimeType":"text/plain"}],
+      #asReference=True,
       )
 
     self.analogs = self.addComplexOutput(
@@ -173,6 +174,14 @@ class AnalogsProcess(WPSProcess):
       formats=[{"mimeType":"application/x-netcdf"}],
       asReference=True,
       identifier="ncout",
+      )
+
+    self.output_html = self.addComplexOutput(
+      identifier="output_html",
+      title="Analogues Viewer html page",
+      abstract="Interactive visualization of calculated analogues",
+      formats=[{"mimeType":"text/html"}],
+      asReference=True,
       )
 
 
@@ -194,7 +203,7 @@ class AnalogsProcess(WPSProcess):
     
 
     #######################
-    ### read input paramert
+    ### read input parameters
     #######################
 
     try:
@@ -212,7 +221,8 @@ class AnalogsProcess(WPSProcess):
       timewin = int(self.getInputValues(identifier='timewin')[0])
       experiment = self.getInputValues(identifier='experiment')[0]      
 
-      logger.info('input paramert set')
+      logger.info('input parameters set')
+      self.status.set('Read in and convert the arguments', 5)
     except Exception as e: 
       msg = 'failed to read input prameter %s ' % e
       logger.error(msg)  
@@ -222,6 +232,7 @@ class AnalogsProcess(WPSProcess):
     ### convert types and set environment
     ######################################
     try:
+      self.status.set('Start preparing enviroment converting arguments', 7)
       refSt = dt.strptime(refSt[0],'%Y-%m-%d')
       refEn = dt.strptime(refEn[0],'%Y-%m-%d')
       dateSt = dt.strptime(dateSt[0],'%Y-%m-%d')
@@ -258,9 +269,6 @@ class AnalogsProcess(WPSProcess):
       logger.error(msg)  
       raise Exception(msg)
 
-    logger.debug("init took %s seconds.", time.time() - start_time)
-    self.status.set('Read in and convert the arguments', 5)
-
     try:            
       if dataset == 'NCEP': 
         if 'z' in var:
@@ -289,7 +297,8 @@ class AnalogsProcess(WPSProcess):
       raise Exception(msg)
 
     logger.debug("init took %s seconds.", time.time() - start_time)
-    self.status.set('Read in the arguments', 5)
+    self.status.set('Read in and convert the arguments done', 8)
+
     #################
     # get input data
     #################
@@ -299,45 +308,81 @@ class AnalogsProcess(WPSProcess):
     self.status.set('fetching input data', 7)
     try:
       input = reanalyses(start = start.year, end = end.year, variable=var, dataset=dataset)
-
+      logger.info('input files %s' % input)
       nc_subset = call(resource=input, variable=var, geom=bbox, spatial_wrapping='wrap')
     except Exception as e :
       msg = 'failed to fetch or subset input files %s' % e
       logger.error(msg)
       raise Exception(msg)
     logger.debug("get_input_subset_dataset took %s seconds.", time.time() - start_time)
+    
     self.status.set('**** Input data fetched', 10)
     
     ########################
     # input data preperation 
     ########################
     self.status.set('Start preparing input data', 12)
-    start_time = time.time()  # mesure data preperation ...
+    start_time = time.time()  # measure data preperation ...
     
-    try: 
-      archive = call(resource=nc_subset, time_range=[refSt , refEn]) 
-      simulation = call(resource=nc_subset, time_range=[dateSt , dateEn])
-      if seacyc == True:
-        analogs.seacyc(archive, simulation, method=normalize)
+    try:
+      #Construct descriptive filenames for the three files listed in config file
+      refDatesString = dt.strftime(refSt,'%Y-%m-%d') + "_" + dt.strftime(refEn,'%Y-%m-%d')
+      simDatesString = dt.strftime(dateSt,'%Y-%m-%d') + "_" + dt.strftime(dateEn,'%Y-%m-%d')
+      archiveNameString = "base_" + var +"_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f' % (bbox[0], bbox[2], bbox[1], bbox[3])
+      simNameString = "sim_" + var +"_" + simDatesString + '_%.1f_%.1f_%.1f_%.1f' % (bbox[0], bbox[2], bbox[1], bbox[3])
+
+      archive = call(resource=nc_subset, time_range=[refSt , refEn], prefix=archiveNameString) 
+      simulation = call(resource=nc_subset, time_range=[dateSt , dateEn], prefix=simNameString)
+      logger.info('archive and simulation files generated: %s, %s' % (archive, simulation))
+
     except Exception as e:
       msg = 'failed to prepare archive and simulation files %s ' % e
       logger.debug(msg)
       raise Exception(msg)
+
+    try:  
+      if seacyc == True:
+        logger.info('normalization function with method: %s ' % normalize)
+        seasoncyc_base, seasoncyc_sim = analogs.seacyc(archive, simulation, method=normalize)
+      else:
+        seasoncyc_base =  seasoncyc_sim = None
+    except Exception as e:
+      msg = 'failed to generate normalization files %s ' % e
+      logger.debug(msg)
+      raise Exception(msg)
       
-    ip, output = mkstemp(dir='.',suffix='.txt')
-    output_file =  path.abspath(output)
+    ip, output_file = mkstemp(dir='.',suffix='.txt')
+    
+# =======
+#     #Create an empty config with with random name  
+#     ip, output = mkstemp(dir='.', suffix='.txt')
+
+#     #Rename random name of config file to more descriptive string
+#     import os
+#     anlgname = "ana_" + var + "_" + distance + "_sim_" + simDatesString + "_ref_" + refDatesString + '_%.1f_%.1f_%.1f_%.1f_seasonwin%ddays_%danalogs.txt' % (bbox[0], bbox[2], bbox[1], bbox[3], seasonwin, nanalog) #+ seasonwin 
+#     os.rename(output,anlgname)
+
+#     #Put config file in temporary working dir
+#     tmppath = os.path.dirname(output)
+#     output_file = os.path.join(tmppath, anlgname)
+  
+#     #Put all three files with their paths in array
+# >>>>>>> analogs detn gives descriptive names to files in config file
     files=[path.abspath(archive), path.abspath(simulation), output_file]
 
-    logger.debug("data preperation took %s seconds.", time.time() - start_time)
+    logger.debug("Data preperation took %s seconds.", time.time() - start_time)
 
     ############################
-    # generating the config file
+    # generate the config file
     ############################
     
     self.status.set('writing config file', 15)
     start_time = time.time() # measure write config ...
     try:  
-      config_file = analogs.get_configfile(files=files, 
+      config_file = analogs.get_configfile(
+        files=files,
+        seasoncyc_base = seasoncyc_base,  
+        seasoncyc_sim=seasoncyc_sim,
         timewin=timewin, 
         varname=var, 
         seacyc=seacyc, 
@@ -381,12 +426,37 @@ class AnalogsProcess(WPSProcess):
       raise Exception(msg)
 
     logger.debug("castf90 took %s seconds.", time.time() - start_time)
-    
+
+
+    ########################
+    # generate analog viewer
+    ########################
+
+    try:
+      f = analogs.refomat_analogs(output_file)
+      logger.info('analogs reformated')
+      self.status.set('Successfully reformatted analog file', 50)
+
+      # put config file into output folder
+
+      config_output_path, config_output_url = analogs.copy_configfile(config_file)
+      
+      output_av = analogs.get_viewer(f, path.basename(config_output_path))
+      logger.info('Viewer generated')
+      self.status.set('Successfully generated analogs viewer', 90)
+
+      logger.info('output_av: %s ' % output_av)
+
+    except Exception as e:
+
+      msg = 'Failed to reformat analogs file or generate viewer%s ' % e
+      logger.debug(msg)
+
     self.status.set('preparting output', 99)
-    self.config.setValue( config_file )
+    self.config.setValue( config_output_url ) #config_file )
     self.analogs.setValue( output_file )
     self.output_netcdf.setValue( simulation )
-    
-    self.status.set('execution ended', 100)
+    self.output_html.setValue( output_av )
 
+    self.status.set('execution ended', 100)
     logger.debug("total execution took %s seconds.", time.time() - process_start_time)

@@ -193,7 +193,7 @@ class AnalogsProcess(WPSProcess):
     start_time = time.time() # measure init ...
     
     #######################
-    ### read input paramert
+    ### read input parameters
     #######################
     try:
       self.status.set('read input parameter : %s '  % dt.now(),5) 
@@ -215,7 +215,7 @@ class AnalogsProcess(WPSProcess):
       # experiment = self.getInputValues(identifier='experiment')[0] 
       # dataset , var = experiment.split('_')
       
-      logger.info('input paramert set')
+      logger.info('input parameters set')
     except Exception as e: 
       msg = 'failed to read input prameter %s ' % e
       logger.error(msg)  
@@ -270,19 +270,20 @@ class AnalogsProcess(WPSProcess):
 
     self.status.set('Start preparing input data', 12)
     start_time = time.time()  # mesure data preperation ...
-    
     try:
       variable = get_variable(resource)
 
       archive = call(resource=resource, time_range=[refSt , refEn], geom=bbox, spatial_wrapping='wrap') 
       simulation = call(resource=resource, time_range=[dateSt , dateEn], geom=bbox, spatial_wrapping='wrap')
       if seacyc == True:
-        analogs.seacyc(archive, simulation, method=normalize)
+        seasoncyc_base, seasoncyc_sim = analogs.seacyc(archive, simulation, method=normalize)
+      else:
+        seasoncyc_base = None  
+        seasoncyc_sim=None
     except Exception as e:
       msg = 'failed to prepare archive and simulation files %s ' % e
       logger.debug(msg)
       raise Exception(msg)
-      
     ip, output = mkstemp(dir='.',suffix='.txt')
     output_file =  path.abspath(output)
     files=[path.abspath(archive), path.abspath(simulation), output_file]
@@ -297,7 +298,10 @@ class AnalogsProcess(WPSProcess):
     start_time = time.time() # measure write config ...
     
     try:  
-      config_file = analogs.get_configfile(files=files, 
+      config_file = analogs.get_configfile(
+        files=files,
+        seasoncyc_base = seasoncyc_base,  
+        seasoncyc_sim=seasoncyc_sim,
         timewin=timewin, 
         varname=variable, 
         seacyc=seacyc, 

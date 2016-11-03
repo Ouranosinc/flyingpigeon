@@ -7,11 +7,11 @@ DIR_SHP = config.shapefiles_dir()
 import logging
 logger = logging.getLogger(__name__)
 
-def has_Lambert_Conformal(nc_files):
-  if type(nc_files) != list:
-      nc_files = [nc_files]
-  for nc_file in nc_files:
-    ds = Dataset(nc_file)
+def has_Lambert_Conformal(resource):
+  if type(resource) != list:
+      resource = [resource]
+  for nc in resource:
+    ds = Dataset(nc)
     if not 'Lambert_Conformal' in ds.variables.keys():
       return False
   return True
@@ -27,29 +27,29 @@ def call(resource=[], variable=None, dimension_map=None, calc=None,
 
   :param resource:
   :param variable: variable in the input file to be picked
-  :param dimension_map: dimension map in case of unconventional starage of data 
-  :param calc: ocgis calc syntax for calcultion opartion 
+  :param dimension_map: dimension map in case of unconventional storage of data 
+  :param calc: ocgis calc syntax for calculation partion 
   :param calc_grouping: time aggregate grouping 
   :param conform_units_to: 
-  :param memory_limit: limit the amout of data to be loaded into the memory at once if None(default) free memory is detected by birdhouse
+  :param memory_limit: limit the amount of data to be loaded into the memory at once if None (default) free memory is detected by birdhouse
   :param level_range: subset of given levels
   :param prefix: string for the file base name 
-  :param regrid_destination: file path with netCDF file with grid for outout file
+  :param regrid_destination: file path with netCDF file with grid for output file
 
   :param geom: name of shapefile stored in birdhouse shape cabinet
   :param output_format_options: output options for netCDF e.g compression level()
   :param regrid_destination: file containing the targed grid (griddes.txt or netCDF file)
   :param regrid_options: methods for regridding: 
-                          'bil' = Biliniar interpolation 
+                          'bil' = Bilinear interpolation 
                           'bic' = Bicubic interpolation 
-                          'dis' = Distance weighted average remapping
+                          'dis' = Distance-weighted average remapping
                           'nn' = nearest neighbour
-                          'con' = First order concerative remapping
+                          'con' = First-order conservative remapping
                           'laf' = largest area fraction reamapping
   :param search_radius_mult: search radius for point geometries. All included gridboxes will be returned
-  :param select_nearest: neares neighbour selection for point geometries
-  :param select_ugid: ugid for appropriate poligons 
-  :param spatial_wrapping: how to handle coordinates in case of subsets, options: None(default), 'wrap', 'unwrap'
+  :param select_nearest: nearest neighbour selection for point geometries
+  :param select_ugid: ugid for appropriate polygons 
+  :param spatial_wrapping: how to handle coordinates in case of subsets, options: None (default), 'wrap', 'unwrap'
   :param time_region: select single month 
   :param time_range: sequence of two datetime.datetime objects to mark start and end point 
   :param dir_output (default= curdir):
@@ -90,14 +90,18 @@ def call(resource=[], variable=None, dimension_map=None, calc=None,
   # execute ocgis 
   logger.info('Execute ocgis module call function')
   
-  if time_range != None:
-    time_range = eval_timerange(resource, time_range)
+  #if time_range != None:
+    #time_range = eval_timerange(resource, time_range)
 
   if has_Lambert_Conformal(resource) == True and not geom == None:
     logger.debug('input has Lambert_Conformal projection and can not subsetted with geom')
     output = None
   else:
     try:
+      #if regrid_destination != None: 
+        #rd_regrid = RequestDataset(uri=regrid_destination)
+      #else:
+        #rd_regrid = None
       rd = RequestDataset(resource, variable=variable, level_range=level_range,
         dimension_map=dimension_map, conform_units_to=conform_units_to, 
         time_region=time_region,t_calendar=t_calendar, time_range=time_range)
@@ -105,6 +109,7 @@ def call(resource=[], variable=None, dimension_map=None, calc=None,
         output_format_options=output_format_options,
         spatial_wrapping=spatial_wrapping,
         spatial_reorder=spatial_reorder,
+        # regrid_destination=rd_regrid,
         # options=options,
         calc=calc,
         calc_grouping=calc_grouping,
@@ -120,31 +125,64 @@ def call(resource=[], variable=None, dimension_map=None, calc=None,
     except Exception as e: 
       logger.debug('failed to setup OcgOperations')
       raise  
-    # check memory load
-    from numpy import sqrt 
-    from flyingpigeon.utils import FreeMemory
+    try:
+      from numpy import sqrt 
+      from flyingpigeon.utils import FreeMemory
+      
+      if memory_limit == None: 
+        f = FreeMemory()
+        mem_kb = f.user_free 
+        mem_mb = mem_kb / 1024.
+        mem_limit = mem_mb / 2. # set limit to half of the free memory
+      else:
+        mem_limit = memory_limit
+
+      if mem_limit >= 1024. * 4: 
+        mem_limit = 1024. * 4
+        # 475.0 MB for openDAP 
+      
+      data_kb = ops.get_base_request_size()['total']
+      data_mb = data_kb / 1024.
+
+      if variable == None: 
+        variable = rd.variable
+        logger.info('%s as variable dedected' % (variable))
+
+      #data_kb = size['total']/reduce(lambda x,y: x*y,size['variables'][variable]['value']['shape'])
+      logger.info('data_mb  = %s ; memory_limit = %s ' % (data_mb , mem_limit ))
+    except Exception as e: 
+      logger.debug('failed to compare dataload with free memory %s ' % e)
+      raise  
+
+
+    ## check memory load
+    #from os import stat
     
-    if memory_limit == None: 
-      f = FreeMemory()
-      mem_kb = f.user_free 
-      mem_mb = mem_kb / 1024.
-      mem_limit = mem_mb / 2. # set limit to half of the free memory
-    else:
-      mem_limit = memory_limit
+      #if memory_limit == None: 
+        #f = FreeMemory()
+        #mem_kb = f.user_free 
+        #mem_mb = mem_kb / 1024.
+        #mem_limit = mem_mb / 2. # set limit to half of the free memory
+      #else:
+        #mem_limit = memory_limit
 
-    if mem_limit >= 1024. * 4: 
-      mem_limit = 1024. * 4
-      # 475.0 MB for openDAP 
-    
-    data_kb = ops.get_base_request_size()['total']
-    data_mb = data_kb / 1024.
+      #if mem_limit >= 1024. * 4: 
+        #mem_limit = 1024. * 4
+        ## 475.0 MB for openDAP 
+      
+      ##if type(resource) == list : 
+        ##data_kb =  stat(resource[0]).st_size * len(resource)
+      ##else: 
+        ##data_kb =  stat(resource).st_size
+      #size = ops.get_base_request_size()['total']
+      #data_kb = size['total']/reduce(lambda x,y: x*y,size['variables'][variable]['value']['shape'])
+      #data_mb = data_kb / 1024.
 
-    if variable == None: 
-      variable = rd.variable
-      logger.info('%s as variable dedected' % (variable))
-
-    #data_kb = size['total']/reduce(lambda x,y: x*y,size['variables'][variable]['value']['shape'])
-    logger.info('data_mb  = %s ; memory_limit = %s ' % (data_mb  , mem_limit ))
+      #if variable == None: 
+        #variable = rd.variable
+        #logger.info('%s as variable dedected' % (variable))
+      
+      #logger.info('data_mb  = %s ; memory_limit = %s ' % (data_mb  , mem_limit ))
     
     if data_mb <= mem_limit :  # input is smaler than the half of free memory size
       try:
@@ -158,31 +196,33 @@ def call(resource=[], variable=None, dimension_map=None, calc=None,
       # calcultion of chunk size
       ##########################
 
-      size = ops.get_base_request_size()
-      nb_time_coordinates_rd = size['variables'][variable]['temporal']['shape'][0]
-      element_in_kb = size['total']/reduce(lambda x,y: x*y,size['variables'][variable]['value']['shape'])
-      element_in_mb = element_in_kb / 1024.
-      tile_dim = sqrt(mem_limit/(element_in_mb*nb_time_coordinates_rd)) # maximum chunk size 
-      
       try:
+        size = ops.get_base_request_size()
+        nb_time_coordinates_rd = size['variables'][variable]['temporal']['shape'][0]
+        element_in_kb = size['total']/reduce(lambda x,y: x*y,size['variables'][variable]['value']['shape'])
+        element_in_mb = element_in_kb / 1024.
+        tile_dim = sqrt(mem_limit/(element_in_mb*nb_time_coordinates_rd)) # maximum chunk size 
+        
         logger.info('ocgis module call compute with chunks')
         print 'ocgis module call compute with chunks'
         if calc == None:
           calc = '%s=%s*1' % (variable, variable)
           logger.info('calc set to = %s ' %  calc)
           ops = OcgOperations(dataset=rd,
-            output_format_options=output_format_options,
-            spatial_wrapping=spatial_wrapping,
-            # options=options,
-            calc=calc,
-            calc_grouping=calc_grouping,
-            geom=geom,
-            output_format=output_format,
-            prefix=prefix,
-            search_radius_mult=search_radius_mult,
-            select_nearest=select_nearest,
-            select_ugid=select_ugid, 
-            add_auxiliary_files=False)
+                    output_format_options=output_format_options,
+                    spatial_wrapping=spatial_wrapping,
+                    spatial_reorder=spatial_reorder,
+                    # regrid_destination=rd_regrid,
+                    # options=options,
+                    calc=calc,
+                    calc_grouping=calc_grouping,
+                    geom=geom,
+                    output_format=output_format,
+                    prefix=prefix,
+                    search_radius_mult=search_radius_mult,
+                    select_nearest=select_nearest,
+                    select_ugid=select_ugid, 
+                    add_auxiliary_files=False)          
         geom_file = compute(ops, tile_dimension=int(tile_dim) , verbose=True)
       except Exception as e: 
         logger.debug('failed to compute ocgis with chunks')
@@ -218,7 +258,7 @@ def eval_timerange(resource, time_range):
   :param resource: input netCDF files 
   :param time_range: start and end date of time range [datetime,datetime]
 
-  :retuns [datetime,datetime]: time_range
+  :returns [datetime,datetime]: time_range
   """
   from flyingpigeon.utils import get_time
 
@@ -230,11 +270,11 @@ def eval_timerange(resource, time_range):
   start = time[0]
   end = time[-1]
 
-  if (time_range[0] >= start or time_range[0] <= end ):
+  if (time_range[0] > start or time_range[0] < end ):
     logger.debug('time range start %s not in input dataset covering: %s to %s' %  (time_range[0] , start, end))
     time_range[0] = start
     logger.debug('time_range start changed to first timestep of dataset')
-  if (time_range[1] >= end or time_range[1] <= start ):
+  if (time_range[1] > end or time_range[1] < start ):
     logger.debug('time range end %s not in input dataset covering: %s to %s' %  (time_range[0] , start, end))
     time_range[1] = end
     logger.debug('time_range end changed to last timestep of dataset')
