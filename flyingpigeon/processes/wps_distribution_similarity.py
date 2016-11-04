@@ -107,37 +107,3 @@ class DSProcess(WPSProcess):
       raise ValueError("Unrecognized algorithm", algo)
     
     self.status.set('Finished process', 100)
-
-
-  
-
-"""
-    
-    self.nc_p = self.addComplexInput(
-      identifier="nc_p",
-      title="NetCDF file for P",
-      abstract="NetCDF file  holding the sample from P, the 'true' distribution.",
-      minOccurs=1,
-      maxOccurs=500,
-      maxmegabites=50000,
-      formats=[{"mimeType":"application/x-netcdf"}],
-      )
-
-    self.nc_q = self.addComplexInput(
-      identifier="nc_q",
-      title="NetCDF file for Q",
-      abstract="NetCDF file  holding the different samples from Q, the 'approximate' distribution.",
-      minOccurs=1,
-      maxOccurs=1,
-      maxmegabites=50000,
-      formats=[{"mimeType":"application/x-netcdf"}],
-      )
-    
-  self.ncout = self.addComplexOutput(
-      identifier="ncout",
-      title="Distribution differences",
-      abstract="Measures of the differences between the distribution of P and Q.",
-      formats=[{"mimeType":"application/x-netcdf"}],
-      asReference=True,
-      )
-  """
