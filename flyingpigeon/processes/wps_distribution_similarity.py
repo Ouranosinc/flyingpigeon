@@ -81,30 +81,30 @@ class DSProcess(WPSProcess):
     
     try: 
       logger.info('Reading the arguments')
-      self.algo = self.getInputValues(identifier='algo')[0]
-      self.vec_p = self.getInputValues(identifier='vec_p')[0]
-      self.vec_q = self.getInputValues(identifier='vec_q')[0]
+      algo = self.getInputValues(identifier='algo')[0]
+      vec_p = self.getInputValues(identifier='vec_p')[0]
+      vec_q = self.getInputValues(identifier='vec_q')[0]
       
-      logger.info("algo: {0}".format(self.algo))
-      logger.debug("algo: {0}".format(self.algo))
-      logger.info("{0} items for P; {1} items for Q".format(len(self.vec_p), len(self.vec_q)))                       
-      logger.debug("{0} items for P; {1} items for Q".format(len(self.vec_p), len(self.vec_q)))                       
+      logger.info("algo: {0}".format(algo))
+      logger.debug("algo: {0}".format(algo))
+      logger.info("{0} items for P; {1} items for Q".format(len(vec_p), len(vec_q)))
+      logger.debug("{0} items for P; {1} items for Q".format(len(vec_p), len(vec_q)))
       self.status.set('Arguments read', 5)  
       
     except Exception as e: 
       logger.error('failed to read in the arguments %s ' % e)
       
-    if self.algo == 'kldiv':
-      with open(self.vec_p, 'r') as f:
+    if algo == 'kldiv':
+      with open(vec_p, 'r') as f:
         p = json.load(f)
-      with open(self.vec_q, 'r') as f:
+      with open(vec_q, 'r') as f:
         q = json.load(f)
 
       out = dd.kldiv(p, q)
       logger.info("Out: {0}".format(out))
       self.output.setValue( out )
     else:
-      raise ValueError("Unrecognized algorithm", self.algo)  
+      raise ValueError("Unrecognized algorithm", algo)
     
     self.status.set('Finished process', 100)
 
