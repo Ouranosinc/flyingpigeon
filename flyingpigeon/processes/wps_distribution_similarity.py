@@ -7,13 +7,12 @@ Author: Nils Hempelmann (info@nilshempelmann.de), David Huard (huard.david@ouran
 #import os
 
 from pywps.Process import WPSProcess
-import logging
+from flyingpigeon import dist_diff as dd
+import logging, json
 logger = logging.getLogger(__name__)
 
 
-
-class DistributionSimilarityProcess(WPSProcess):
-    
+class DSProcess(WPSProcess):
   def __init__(self):
     WPSProcess.__init__(
       self,
@@ -21,16 +20,18 @@ class DistributionSimilarityProcess(WPSProcess):
       title = "Similarity between distributions",
       version = "0.9",
       #metadata= [
+      #    {"title": "Bayerische Landesanstalt fuer Wald und Forstwirtschaft", "href": "http://www.lwf.bayern.de/"},
       #    {"title": "Documentation", "href": "http://flyingpigeon.readthedocs.io/en/latest/"},
       #   ],
+
       abstract="Returns a measure of the difference D(P,Q) between two distributions P and Q, each described by a sample of values x and y.",
       statusSupported=True,
       storeSupported=True
       )
-      
-  ###########
-  ### INPUTS
-  ###########
+
+    ###########
+    ### INPUTS
+    ###########
     self.algo = self.addLiteralInput(
       identifier="algo",
       title="Algorithm",
@@ -38,17 +39,18 @@ class DistributionSimilarityProcess(WPSProcess):
       default="kldiv",
       allowedValues=['kldiv',],
       type=type(''),
-      minOccurs=1,
+      minOccurs=0,
       maxOccurs=1,
-    )
+      )
+            
     self.vec_p = self.addComplexInput(
       identifier="vec_p",
       title="List of values from P",
       abstract="",
       minOccurs=1,
-      maxOccurs=500,
+      maxOccurs=1,
       maxmegabites=50000,
-      formats=[{"mimeType":"json"}],
+      formats=[{"mimeType":"application/json"}],
       )
 
     self.vec_q = self.addComplexInput(
@@ -58,9 +60,59 @@ class DistributionSimilarityProcess(WPSProcess):
       minOccurs=1,
       maxOccurs=1,
       maxmegabites=50000,
-      formats=[{"mimeType":"json"}],
+      formats=[{"mimeType":"application/json"}],
       )
-    """
+    
+    ###########
+    ### OUTPUTS
+    ###########
+    self.output = self.addLiteralOutput(
+      identifier="output",
+      title="Distribution difference",
+      type=type(1.0),
+      abstract="Measures of the difference between the distribution of P and Q.",
+      )
+  
+
+
+  def execute(self):
+    
+    self.status.set('Start process', 0)
+    
+    try: 
+      logger.info('Reading the arguments')
+      self.algo = self.getInputValues(identifier='algo')[0]
+      self.vec_p = self.getInputValues(identifier='vec_p')[0]
+      self.vec_q = self.getInputValues(identifier='vec_q')[0]
+      
+      logger.info("algo: {0}".format(self.algo))
+      logger.debug("algo: {0}".format(self.algo))
+      logger.info("{0} items for P; {1} items for Q".format(len(self.vec_p), len(self.vec_q)))                       
+      logger.debug("{0} items for P; {1} items for Q".format(len(self.vec_p), len(self.vec_q)))                       
+      self.status.set('Arguments read', 5)  
+      
+    except Exception as e: 
+      logger.error('failed to read in the arguments %s ' % e)
+      
+    if self.algo == 'kldiv':
+      with open(self.vec_p, 'r') as f:
+        p = json.load(f)
+      with open(self.vec_q, 'r') as f:
+        q = json.load(f)
+
+      out = dd.kldiv(p, q)
+      logger.info("Out: {0}".format(out))
+      self.output.setValue( out )
+    else:
+      raise ValueError("Unrecognized algorithm", self.algo)  
+    
+    self.status.set('Finished process', 100)
+
+
+  
+
+"""
+    
     self.nc_p = self.addComplexInput(
       identifier="nc_p",
       title="NetCDF file for P",
@@ -80,17 +132,7 @@ class DistributionSimilarityProcess(WPSProcess):
       maxmegabites=50000,
       formats=[{"mimeType":"application/x-netcdf"}],
       )
-    """
-  ###########
-  ### OUTPUTS
-  ###########
-    self.out = self.addLiteralOutput(
-      identifier="out",
-      title="Distribution difference",
-      data_type='float',
-      abstract="Measures of the difference between the distribution of P and Q.",
-      )
-  """
+    
   self.ncout = self.addComplexOutput(
       identifier="ncout",
       title="Distribution differences",
@@ -99,38 +141,3 @@ class DistributionSimilarityProcess(WPSProcess):
       asReference=True,
       )
   """
-
-    
-  def execute(self):
-    from os.path import basename
-    from flyingpigeon.utils import archive
-    from flyingpigeon import dist_diff as dd
-
-    self.status.set('Start process', 0)
-  
-    try: 
-      logger.info('Reading the arguments')
-      #nc_p = self.getInputValues(identifier='nc_p')
-      #nc_q = self.getInputValues(identifier='nc_q')
-      self.algo = self.getInputValues(identifier='algo')
-      self.vec_p = selg.getInputValues(identifier='vec_p')
-      self.vec_q = selg.getInputValues(identifier='vec_q')
-      
-      logger.info("algo: {0}".format(algo))
-      logger.info("{0} items for P; {1} items for Q".format(len(vec_p), len(vec_q)))                       
-      #logger.info("Inputs:\nnc_p: {0}\nc_q: {1}\nalgo: {2}".format(nc_p, nc_q, algo))
-      self.status.set('Arguments read', 5)  
-      
-    except Exception as e: 
-      logger.error('failed to read in the arguments %s ' % e)
-      
-    if algo == 'kldiv':
-      self.out.setValue( dd.kldiv(vec_p, vec_q) )
-    else:
-      raise ValueError(self.algo)  
-      
-    self.status.set('Finished process', 100)
-    
-  
-
-
