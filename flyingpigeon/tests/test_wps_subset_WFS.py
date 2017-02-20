@@ -59,39 +59,64 @@ datainputs = "[resource={0};typename=ADMINBOUNDARIES:canada_admin_boundaries;fea
 
 #Test opengeo:countries
 
-def test_wps_subset_WFS_OPENGEO_CONTRIES():
+def test_wps_subset_WFS_MULTIPLE_OPENGEO_COUNTRIES():
     do_not_test = [12, 71]  # None polygons with Topological problems
-    idx_countries = np.arange(1, 242)
+    idx_countries = np.arange(1, 10)
+    countries_elem = []
     for idx in idx_countries:
         if not idx in do_not_test:
-            datainputs = "[resource={};typename=opengeo:countries;featureids=countries.{};mosaic=False]".format(
-                TESTDATA['cmip5_tasmax_2006_nc'], idx)
+            countries_elem.append("countries.{}".format(idx))
 
-            wps = WpsTestClient()
-            resp = wps.get(service='wps', request='execute', version='1.0.0',
-                       identifier='subset_WFS',
-                       datainputs=datainputs)
-            print resp.data
-            print datainputs
-            assert_response_success(resp)
+    featuresids = '{}'.format( ','.join(map(str, countries_elem)))
 
-#Test ADMINBOUNDARIES
+    datainputs = "[resource={};typename=opengeo:countries;featureids={};mosaic=False]".format(
+        TESTDATA['cmip5_tasmax_2006_nc'],featuresids)
 
-def test_wps_subset_WFS_CANADA_ADMINBOUNDARIES():
-    do_not_test = []
-    idx_countries = np.arange(1, 14)
-    for idx in idx_countries:
-        if not idx in do_not_test:
-            datainputs = "[resource={};typename=ADMINBOUNDARIES:canada_admin_boundaries;featureids=canada_admin_boundaries.{};mosaic=False]".format(
-                TESTDATA['cmip5_tasmax_2006_nc'], idx)
+    wps = WpsTestClient()
+    resp = wps.get(service='wps', request='execute', version='1.0.0',
+                   identifier='subset_WFS',
+                   datainputs=datainputs)
+    print resp.data
+    print datainputs
+    assert_response_success(resp)
 
-            wps = WpsTestClient()
-            resp = wps.get(service='wps', request='execute', version='1.0.0',
-                       identifier='subset_WFS',
-                       datainputs=datainputs)
-            print resp.data
-            print datainputs
-            assert_response_success(resp)
+    toto = 0
+
+
+
+# def test_wps_subset_WFS_OPENGEO_COUNTRIES():
+#     do_not_test = [12, 71]  # None polygons with Topological problems
+#     idx_countries = np.arange(1, 242)
+#     for idx in idx_countries:
+#         if not idx in do_not_test:
+#             datainputs = "[resource={};typename=opengeo:countries;featureids=countries.{};mosaic=False]".format(
+#                 TESTDATA['cmip5_tasmax_2006_nc'], idx)
+#
+#             wps = WpsTestClient()
+#             resp = wps.get(service='wps', request='execute', version='1.0.0',
+#                        identifier='subset_WFS',
+#                        datainputs=datainputs)
+#             print resp.data
+#             print datainputs
+#             assert_response_success(resp)
+#
+# #Test ADMINBOUNDARIES
+#
+# def test_wps_subset_WFS_CANADA_ADMINBOUNDARIES():
+#     do_not_test = []
+#     idx_countries = np.arange(1, 14)
+#     for idx in idx_countries:
+#         if not idx in do_not_test:
+#             datainputs = "[resource={};typename=ADMINBOUNDARIES:canada_admin_boundaries;featureids=canada_admin_boundaries.{};mosaic=False]".format(
+#                 TESTDATA['cmip5_tasmax_2006_nc'], idx)
+#
+#             wps = WpsTestClient()
+#             resp = wps.get(service='wps', request='execute', version='1.0.0',
+#                        identifier='subset_WFS',
+#                        datainputs=datainputs)
+#             print resp.data
+#             print datainputs
+#             assert_response_success(resp)
 
 
 

@@ -4,6 +4,7 @@ import zipfile
 import logging
 import shutil
 import subprocess
+
 import numpy as np
 
 
@@ -15,11 +16,18 @@ from owslib.wfs import WebFeatureService
 from netCDF4 import Dataset
 from netCDF4 import MFDataset
 import fiona
+import json
 from shapely.geometry import shape, mapping
+from shapely.ops import cascaded_union
 
-from osgeo import ogr
+import osgeo.ogr as ogr
+import osgeo.osr as osr
 
 logger = logging.getLogger(__name__)
+
+MAX_NUMBER_OUTPUTS_NETCDF = 1
+MAXMEGIGABITS = 5000
+SIMPLIFY_TOLERANCE=0.0001
 
 def Polygonize(geom, geoms_list):
     if geom.GetGeometryType() is ogr.wkbPolygon:
@@ -50,7 +58,7 @@ class WFSClippingProcess(WPSProcess):
             abstract="NetCDF File",
             minOccurs=1,
             maxOccurs=1000,
-            maxmegabites=5000,
+            maxmegabites=MAXMEGIGABITS,
             formats=[{"mimeType":"application/x-netcdf"}],
             )
 
@@ -117,8 +125,17 @@ class WFSClippingProcess(WPSProcess):
         #     identifier="ncout",
         # )
 
+        # Creates multiple outputs in case of multiple features inputs without mosaic.
+        # The output WPS response will enumerate only the outputs used if pywps (pywps/Wps/Execute/__init__.py) is
+        # modified with :
+            #if len(output.metadata):
+            #    if 'bypass_output_empty_value' in output.metadata[0]:
+            #        if output.metadata[0]['bypass_output_empty_value'] and output.value is None:
+            #            continue
+
+        # The number of features cannot exceed more than MAX_NUMBER_OUTPUTS_NETCDF in mosaic=False
         self.outputs_netcdf = []
-        k = np.arange(0,100)
+        k = np.arange(0,MAX_NUMBER_OUTPUTS_NETCDF)
         for i in k:
             self.outputs_netcdf.append(self.addComplexOutput(
             title="Subsets for one dataset",
@@ -126,9 +143,8 @@ class WFSClippingProcess(WPSProcess):
             formats=[{"mimeType": "application/x-netcdf"}],
             asReference=True,
             identifier="ncout_{}".format(i),
+            metadata=[{"bypass_output_empty_value":True}]
         ))
-
-        t = 0
 
     def execute(self):
         urls = self.getInputValues(identifier='resource')
@@ -147,8 +163,7 @@ class WFSClippingProcess(WPSProcess):
         logger.debug('starting: num_files=%s' % (len(urls)))
 
         try:
-
-            #Connect to WFS server
+            # Connect to WFS server
             source_shapefile_name = typename.split(":")[1]
             url = config.wfs_url()
             wfs = WebFeatureService(url, "1.1.0")
@@ -156,46 +171,68 @@ class WFSClippingProcess(WPSProcess):
             # What type of request will we do
             if featureids is None:
                 if xmlfilter is not None:
-                    polygons = wfs.getfeature(typename=typename, filter=xmlfilter, outputFormat='shape-zip')
+                    polygons = wfs.getfeature(typename=typename, filter=xmlfilter, outputFormat='application/json')
                 else:
                     raise Exception('Feature Ids or XML filter required')
             else:
-                featurelist= featureids.split(",")
-                polygons = wfs.getfeature(typename=typename, featureid=featurelist, outputFormat='shape-zip')
-                rangedlist = range(0, len(featurelist))
-                featureidlist = [str(elem) for elem in rangedlist]
+                featurelist = featureids.split(",")
+                polygons = wfs.getfeature(typename=typename, featureid=featurelist, outputFormat='application/json')
 
-            #get unique name for folder and create it
+            #decode json
+            polygons_geojson = json.load(polygons)
+
+            #list all polygons
+            geoms_list = []
+            for feature in polygons_geojson['features']:
+                geom = json.dumps(feature['geometry'])
+                geom = ogr.CreateGeometryFromJson(geom)
+                geoms_list.append(geom)
+
+            # create the data source
+            driver = ogr.GetDriverByName("ESRI Shapefile")
+            # get unique name for folder and create it
             unique_dirname = str(uuid.uuid4())
-            #unique_dirname = 'toto'
+            # unique_dirname = 'toto'
             dirpath = os.path.join(config.cache_path(), unique_dirname)
-            if not  os.path.exists(dirpath):
+            if not os.path.exists(dirpath):
                 os.mkdir(dirpath)
-            filepath = os.path.join(dirpath, 'file.zip')
-
-            #Saves the result in folder and unzips it
-            out = open(filepath, 'wb')
-            out.write(bytes(polygons.read()))
-            out.close()
-            zip_ref = zipfile.ZipFile(filepath, 'r')
-            zip_ref.extractall(dirpath)
-            zip_ref.close()
-
-            #Has to switch LAT/LON to LON/LAT, because OWlib can't do 1.0.0 and don't accept EPSG:xxxx as srs
             source_shp_path = os.path.join(dirpath, source_shapefile_name + ".shp")
-            dest_shapefile_name =source_shapefile_name + "_flipped"
-            dest_shp_path = os.path.join(dirpath, dest_shapefile_name + ".shp")
+            data_source = driver.CreateDataSource(source_shp_path)
 
-            print dest_shp_path
-            print source_shp_path
-            args = ("ogr2ogr", "-s_srs", "+proj=latlong +datum=WGS84 +axis=neu +wktext",
-                    "-t_srs", "+proj=latlong +datum=WGS84 +axis=enu +wktext", "-simplify", "0.0001", dest_shp_path, source_shp_path)
-            output, error = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE).communicate()
-            logger.info('ogr2ogr info:\n %s ' % output)
-            logger.debug('ogr2ogr errors:\n %s ' % error)
+            # create the spatial reference, WGS84
+            srs = osr.SpatialReference()
+            srs.ImportFromEPSG(4326)
 
-            #Do clipping, without forgetting to switch GEOMCABINET
+            geom_inputs = []
+            if mosaic :
+                geom_u = geoms_list[0]
+                for geom  in geoms_list:
+                    geom_u = geom_u.Union(geom)
+                geom_inputs.append(geom_u.SimplifyPreserveTopology(SIMPLIFY_TOLERANCE))
+                mosaic=False #bypass mosaic in OGCGis.  Process a Multipolygon composed from the union of all inputs
+            else :
+                geom_inputs = [geom.SimplifyPreserveTopology(SIMPLIFY_TOLERANCE) for geom in geoms_list]
+
+            # create the layer
+            layer = data_source.CreateLayer("data", srs, ogr.wkbUnknown)
+
+            rangedlist = range(0, len(geom_inputs))
+            featureidlist = [str(elem) for elem in rangedlist]
+
+            # Create the source shape file
+            for geom in geom_inputs:
+                feature = ogr.Feature(layer.GetLayerDefn())
+                # Set the feature geometry using the point
+                feature.SetGeometry(geom)
+                # Create the feature in the layer (shapefile)
+                layer.CreateFeature(feature)
+                # Dereference the feature
+                feature = None
+
+            # Save and close the data source
+            data_source = None
+
+            # Do clipping, without forgetting to switch GEOMCABINET
             results = clipping(
                 resource=urls,
                 polygons=featureidlist,
@@ -204,8 +241,8 @@ class WFSClippingProcess(WPSProcess):
                 variable=variable,
                 dir_output=os.path.abspath(os.curdir),
                 geomcabinet=dirpath,
-                geom=dest_shp_path
-                )
+                geom=source_shp_path
+            )
             logger.info('WPS clipping done')
         except Exception as e:
             msg = 'WPS clipping failed'
@@ -227,23 +264,16 @@ class WFSClippingProcess(WPSProcess):
 
         self.output.setValue(tarf)
 
-        l = len(self.outputs_netcdf)
-        j = min(l,len(results))
+        n_output = len(self.outputs_netcdf)
+        n_output_to_save = min(n_output, len(results))
 
-        jj = np.arange(0,j)
-        for jjj in jj:
-            self.outputs_netcdf[jjj].setValue(results[jjj])
-
-
-
-        #i = next((i for i, x in enumerate(results) if x), None)
-        #self.output_netcdf.setValue(results[i])
-
-
-
-        #self.output_netcdf2.setValue(results[1])
+        #populate outputs list
+        idxs = np.arange(0, n_output_to_save)
+        for idx in idxs:
+            self.outputs_netcdf[idx].setValue(results[idx])
 
         self.status.set('done', 100)
+
 
 
 
