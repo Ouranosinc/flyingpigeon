@@ -1,5 +1,7 @@
-from .common import WpsTestClient, TESTDATA, assert_response_success
+import pytest
 
+from .common import WpsTestClient, TESTDATA, assert_response_success
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_wps_plot_timeseries():
     wps = WpsTestClient()
     datainputs = "[resource={0};resource={1};variable=tasmax]".format(

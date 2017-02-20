@@ -22,6 +22,7 @@ def test_wps_spatial_averager_WFS_single_datainput_several_polys():
                    datainputs=datainputs)
     assert_response_success(resp)
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_wps_spatial_averager_WFS_several_datainputs_one_poly():
     wps = WpsTestClient()
     datainputs = "[resource={0};resource={1};typename=usa:states;featureids=states.49]".format(
