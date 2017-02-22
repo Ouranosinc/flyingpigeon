@@ -7,6 +7,28 @@ datainputs = "[resource={0};typename=opengeo:countries;featureids=countries.227;
 datainputs = "[resource={0};typename=ADMINBOUNDARIES:canada_admin_boundaries;featureids=canada_admin_boundaries.3;mosaic=False]".format(TESTDATA['cmip5_tasmax_2006_nc'])
 
 
+#Test opengeo:countries
+
+def test_wps_subset_WFS_MULTIPLE_OPENGEO_COUNTRIES():
+    do_not_test = [12, 71]  # Known polygons with Topological problems
+    idx_countries = np.arange(1, 10)
+    countries_elem = []
+    for idx in idx_countries:
+        if not idx in do_not_test:
+            countries_elem.append("countries.{}".format(idx))
+
+    featuresids = '{}'.format( ','.join(map(str, countries_elem)))
+
+    datainputs = "[resource={};typename=opengeo:countries;featureids={};mosaic=False]".format(
+        TESTDATA['cmip5_tasmax_2006_nc'],featuresids)
+
+    wps = WpsTestClient()
+    resp = wps.get(service='wps', request='execute', version='1.0.0',
+                   identifier='subset_WFS',
+                   datainputs=datainputs)
+    print resp.data
+    print datainputs
+    assert_response_success(resp)
 
 # def test_wps_subset_WFS_WATERSHEDS_BV_N3_S():
 #     do_not_test = [6551]
@@ -56,36 +78,8 @@ datainputs = "[resource={0};typename=ADMINBOUNDARIES:canada_admin_boundaries;fea
 #             print datainputs
 #             assert_response_success(resp)
 
-
-#Test opengeo:countries
-
-def test_wps_subset_WFS_MULTIPLE_OPENGEO_COUNTRIES():
-    do_not_test = [12, 71]  # None polygons with Topological problems
-    idx_countries = np.arange(1, 10)
-    countries_elem = []
-    for idx in idx_countries:
-        if not idx in do_not_test:
-            countries_elem.append("countries.{}".format(idx))
-
-    featuresids = '{}'.format( ','.join(map(str, countries_elem)))
-
-    datainputs = "[resource={};typename=opengeo:countries;featureids={};mosaic=False]".format(
-        TESTDATA['cmip5_tasmax_2006_nc'],featuresids)
-
-    wps = WpsTestClient()
-    resp = wps.get(service='wps', request='execute', version='1.0.0',
-                   identifier='subset_WFS',
-                   datainputs=datainputs)
-    print resp.data
-    print datainputs
-    assert_response_success(resp)
-
-    toto = 0
-
-
-
 # def test_wps_subset_WFS_OPENGEO_COUNTRIES():
-#     do_not_test = [12, 71]  # None polygons with Topological problems
+#     do_not_test = [12, 71]  # Known polygons with Topological problems
 #     idx_countries = np.arange(1, 242)
 #     for idx in idx_countries:
 #         if not idx in do_not_test:
