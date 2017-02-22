@@ -25,7 +25,7 @@ import osgeo.osr as osr
 
 logger = logging.getLogger(__name__)
 
-MAX_NUMBER_OUTPUTS_NETCDF = 1
+MAX_NUMBER_OUTPUTS_NETCDF = 100
 MAXMEGIGABITS = 5000
 SIMPLIFY_TOLERANCE=0.0001
 
@@ -115,6 +115,7 @@ class WFSClippingProcess(WPSProcess):
             formats=[{"mimeType":"application/x-tar"}],
             asReference=True,
             identifier="output",
+            metadata=[{"bypass_output_empty_value": True}]
         )
 
         # self.output_netcdf = self.addComplexOutput(

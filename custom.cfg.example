@@ -1,12 +1,17 @@
 [buildout]
 
-extends = buildout.cfg
+extends = profiles/docker.cfg
 
 [settings]
 hostname = localhost
 http-port = 8093
 output-port = 8090
 log-level = WARN
+
+wfs-hostname = outarde.crim.ca
+wfs-port = 8087
+wfs-basepath = geoserver/wfs
+wfs_url = http://outarde.crim.ca:8087/geoserver/wfs
 
 ## deployment options
 #prefix =  /opt/birdhouse

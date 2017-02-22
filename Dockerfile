@@ -15,6 +15,7 @@ ENV HOME /root
 
 # Copy application sources
 COPY . /opt/birdhouse/src/flyingpigeon
+RUN cp /opt/birdhouse/src/flyingpigeon/custom.cfg.example /opt/birdhouse/src/flyingpigeon/custom.cfg
 
 # cd into application
 WORKDIR /opt/birdhouse/src/flyingpigeon
@@ -29,8 +30,11 @@ RUN bash bootstrap.sh -i && bash requirements.sh
 ENV ANACONDA_HOME /opt/conda
 ENV CONDA_ENVS_DIR /opt/conda/envs
 
+RUN mkdir -p /opt/birdhouse/var/lib && mkdir -p /opt/birdhouse/var/log && mkdir -p /opt/birdhouse/etc && mkdir -p /opt/birdhouse/var/run
+
 # Run install and fix permissions
 RUN make clean install && chmod 755 /opt/birdhouse/etc && chmod 755 /opt/birdhouse/var/run
+
 
 # Volume for data, cache, logfiles, ...
 VOLUME /opt/birdhouse/var/lib
