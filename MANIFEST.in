@@ -1,0 +1,3 @@
+include *.rst
+graft flyingpigeon
+global-exclude *.pyc *.*~
