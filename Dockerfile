@@ -38,9 +38,9 @@ ENV CONDA_ENVS_DIR /opt/conda/envs
 
 RUN mkdir -p /opt/birdhouse/var/lib && mkdir -p /opt/birdhouse/var/log && mkdir -p /opt/birdhouse/etc && mkdir -p /opt/birdhouse/var/run
 
+
 # Run install and fix permissions
 RUN make clean install && chmod 755 /opt/birdhouse/etc && chmod 755 /opt/birdhouse/var/run && chmod 755 /opt/birdhouse/var/log && chmod 755 /opt/birdhouse/var/lib
-
 # Volume for data, cache, logfiles, ...
 VOLUME /opt/birdhouse/var/lib
 VOLUME /opt/birdhouse/var/log
