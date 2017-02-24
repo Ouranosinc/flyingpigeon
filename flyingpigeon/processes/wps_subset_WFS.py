@@ -25,7 +25,7 @@ import osgeo.osr as osr
 
 logger = logging.getLogger(__name__)
 
-MAX_NUMBER_OUTPUTS_NETCDF = 100
+MAX_NUMBER_OUTPUTS_NETCDF = 1
 MAXMEGIGABITS = 5000
 SIMPLIFY_TOLERANCE=0.0001
 
