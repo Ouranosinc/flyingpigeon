@@ -129,5 +129,64 @@ def kldiv(x, y, k=1):
         return D[0]
 
 
+import ocgis
+from ocgis.calc import base
+from ocgis.util.helpers import iter_array
+from ocgis.util.logging_ocgis import ocgis_lh
+from ocgis.exc import SampleSizeNotImplemented, DefinitionValidationError, UnitsValidationError
+
+class DistDiff_old(base.AbstractMultivariateFunction, base.AbstractParameterizedFunction):
+    description = 'Return a measure of the difference between two multivariate distributions.'
+
+    key = 'dist_diff'
+    units = None
+    standard_name = 'dist_diff'
+    long_name = "Difference between two distributions."
+    parms_definition={'algo':str, 'rv':tuple, 'tv':tuple}
+    required_variables = ['rv', 'tv']
+    joined_variables = True
+    _potential_algo=('kldiv',)
+    time_aggregation_external = False
+
+    def calculate(self, rv=[], tv=[], algo='kldiv'):
+        assert (algo in self._potential_algo)
+
+        # Check that there is only one time vector in the target data
+        # Note that we could eventually loop around multiple locations in the target data, but it could get messy pretty fast.
+        tsh = list(tv[0].shape)
+        tsh.pop(1) # Pop the time dimension.
+        assert np.all(np.equal(tsh,1)) # Check that all dimensions except time are equal to 1.
+        q = np.squeeze(np.array(tv)).T
+
+        # Realization, time, level, row, column
+        # Aggregation over the variable and time dimensions.
+        out = np.empty_like(rv[0][:,:1])
+        itr = iter_array(rv[0][:,:1])
+        for ie, it, il, ir, ic in itr:
+            p = np.vstack((x[ie, :, il, ir, ic] for x in rv)).T
+            out[ie, it, il, ir, ic] =  1 #kldiv(p, q, k=1)
+
+        return out
+
+ocgis.FunctionRegistry.append(DistDiff)
+ocgis.env.DIR_DATA = '/home/david/projects/PAVICS/birdhouse/flyingpigeon/flyingpigeon/tests/testdata/spatial_analog/'
+rfn = 'reference_indicators.nc' # TESTDATA['reference_indicators']
+tfn = 'target_indicators.nc'
+
+indices = ['meantemp', 'totalpr']
+# Create dataset collection
+rrd = ocgis.RequestDataset(rfn, variable=indices, alias=['rv1', 'rv2'])
+trd = ocgis.RequestDataset(tfn, variable=indices, alias=['tv1', 'tv2'])
+rdc = ocgis.RequestDatasetCollection([rrd, trd])
+ops = ocgis.OcgOperations(calc=[{'func':'dist_diff', 'name':'spatial_analog','kwds':{'algo':'kldiv', 'rv':('rv1', 'rv2'), 'tv':('tv1', 'tv2')}},], calc_grouping='all', dataset=[rrd,trd])
+ops.execute()
+
+#ocgis.env.DIR_OUTPUT = '/tmp'
+#rd = ocgis.RequestDataset(rfn)
+#ops = ocgis.OcgOperations(geom=[-100., 50.], select_nearest=True, dataset=rd, output_format='nc', prefix='target')
+#e = ops.execute()
 
 
+"""
+The current approach won't work because get_slice_and_calculation is is charge of dealing with index iteration, and assumes symetry across required variables.
+"""

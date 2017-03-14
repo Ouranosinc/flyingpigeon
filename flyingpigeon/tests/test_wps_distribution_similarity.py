@@ -6,7 +6,6 @@ import json, tempfile, os
 from numpy.testing import assert_approx_equal as aae
 from flyingpigeon.dist_diff import kldiv
 
-#@pytest.mark.online
 def test_wps_distribution_similarity():
     N = 100
     wps = WpsTestClient()

@@ -39,8 +39,8 @@ class SDMProcess(WPSProcess):
         # Literal Input Data
         # ------------------
 
-        self.reference_nc = self.addComplexInput(
-            identifier="reference_nc",
+        self.resource = self.addComplexInput(
+            identifier="resource",
             title="Reference NetCDF Dataset",
             abstract="NetCDF dataset storing the reference indices.",
             minOccurs=1,
@@ -53,21 +53,11 @@ class SDMProcess(WPSProcess):
             identifier="target_nc",
             title="Target NetCDF dataset",
             abstract="Target NetCDF dataset storing the target indices over the target period.",
-            minOccurs=0,
+            minOccurs=1,
             maxOccurs=10,
             maxmegabites=50000,
             formats=[{"mimeType":"application/x-netcdf"}],
             )
-
-        self.target_json = self.addComplexInput(
-            identifier="target_json",
-            title="Target JSON dataset",
-            abstract="Target JSON dataset storing the target indices over the target period in a dictionary keyed by variable names.",
-            minOccurs=0,
-            maxOccurs=10,
-            maxmegabites=50000,
-            formats=[{"mimeType": "application/json"}],
-        )
 
         self.indices = self.addLiteralInput(
             identifier="indices",
@@ -136,7 +126,64 @@ class SDMProcess(WPSProcess):
             type = type(1.0),
         )
 
-    def execute(self):
+
+    def execute_ocgis(self):
+        import ocgis
+
+        urls = self.getInputValues(identifier='resource')
+        target_nc = self.getInputValues(identifier='target_nc')
+        indices = self.getInputValues(identifier='indices')
+        algo = self.getInputValue(identifier='algo')
+        refrange = self.getInputValue(identifier='refrange')
+        targetrange = self.getInputValues(identifier='targetrange')
+        archive_fmt = self.getInputValue(identifier='archive_format')
+
+        logger.info('urls = {0}'.format(urls))
+        logger.info('target = {0}'.format(target_nc or target_json))
+        logger.info('indices = {0]'.format(indices))
+        logger.info('algo = {0}'.format(algo))
+        logger.info('refrange = {0}'.format(refrange))
+        logger.info('targetrange = {0}'.format(targetrange))
+
+        self.status.set('Arguments set for spatial analog process',0)
+        logger.debug('starting: num_files = {0}'.format(len(urls)))
+
+        try:
+            ref_rd = ocgis.RequestDataset(urls, variable=indices, alias='reference')
+            tar_rd = ocgis.RequestDataset(target_nc, variable=indices, alias='target')
+            rdc = ocgis.RequestDatasetCollection(ref_rd, tar_rd)
+            results = spatial_analog_calc(
+                resource=urls,
+                variables=indices,
+                )
+
+        except Exception as e:
+            msg = 'Spatial analog failed'
+            logger.exception(msg)
+            raise Exception(msg)
+
+        if not results:
+            raise Exception('no results produced')
+
+        try:
+            from flyingpigeon.utils import archive
+            tarf = archive(results)
+            logger.info('Tar file prepared')
+        except Exception as e:
+            msg = 'Tar file preparation failed'
+            logger.exception(msg)
+            raise Exception(msg)
+
+        self.output.setValue(tarf)
+
+        i = next((i for (i, x) in enumerate(results) if x), None)
+        self.output_netcdf.setValue(results[i])
+
+        self.status.set('done', 100)
+
+
+
+    def execute_simple(self):
 
         self.status.set('Start process', 0)
 
