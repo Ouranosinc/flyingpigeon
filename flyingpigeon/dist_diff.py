@@ -8,7 +8,7 @@ Methods to compute the (dis)similarity between samples
 ======================================================
 
 This module implements five of the six methods described in [1]_ to measure
-the dissimlarity between two samples. Some of these algorithms can be used to
+the dissimilarity between two samples. Some of these algorithms can be used to
 test whether or not two samples have been drawn from the same distribution.
 Here, they are used to find areas with analog climate conditions to a target
 climate.
@@ -18,7 +18,7 @@ Methods available
  * Standardized Euclidean Distance
  * Nearest Neighbour
  * Zech-Aslan statistic
- * Friedman-Rasfsky run statistic
+ * Friedman-Rafsky run statistic
  * Kullback-Leibler divergence
 
 
@@ -43,6 +43,8 @@ __all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan', 'friedman_rafsky',
 # ---------------------------------------------------------------------------- #
 # -------------------------- Utility functions ------------------------------- #
 # ---------------------------------------------------------------------------- #
+
+
 def reshape_sample(x, y):
     """
     Reshape the input arrays to conform to the conventions used in the
@@ -104,6 +106,7 @@ def standardize(x, y):
 # ------------------------ Dissimilarity metrics ----------------------------- #
 # ---------------------------------------------------------------------------- #
 
+
 def seuclidean(x, y):
     """
     Compute the Euclidean distance between the mean of a multivariate
@@ -133,14 +136,15 @@ def seuclidean(x, y):
     21st-century climate-change scenarios. Climatic Change,
     DOI 10.1007/s10584-011-0261-z.
     """
-    x,y = reshape_sample(x, y)
+    x, y = reshape_sample(x, y)
 
     mx = x.mean(0)
     my = y.mean(0)
 
     return spatial.distance.seuclidean(mx, my, x.var(0, ddof=1))
-#
-def nearest_neighbor(x,y):
+
+
+def nearest_neighbor(x, y):
     """
     Compute a dissimilarity metric based on the number of points in the
     pooled sample whose nearest neighbor belongs to the same distribution.
@@ -168,16 +172,17 @@ def nearest_neighbor(x,y):
     nx, dx = x.shape
 
     # Pool the samples and find the nearest neighbours
-    xy = np.vstack([x,y])
+    xy = np.vstack([x, y])
     tree = KDTree(xy)
-    r, ind = tree.query(xy, k=2, eps=0, p=2, n_jobs=2);
+    r, ind = tree.query(xy, k=2, eps=0, p=2, n_jobs=2)
 
     # Identify points whose neighbors are from the same sample
     same = ~np.logical_xor(*(ind < nx).T)
 
     return same.mean()
-#
-def zech_aslan(x,y):
+
+
+def zech_aslan(x, y):
     """
     Compute the Zech-Aslan dissimimilarity metric based on an analogy with
     the energy of a cloud of electrical charges.
@@ -208,8 +213,8 @@ def zech_aslan(x,y):
 
     v = x.std(0, ddof=1) * y.std(0, ddof=1)
 
-    dx  = spatial.distance.pdist(x, 'seuclidean', V=v)
-    dy  = spatial.distance.pdist(y, 'seuclidean', V=v)
+    dx = spatial.distance.pdist(x, 'seuclidean', V=v)
+    dy = spatial.distance.pdist(y, 'seuclidean', V=v)
     dxy = spatial.distance.cdist(x, y, 'seuclidean', V=v)
 
     phix = -np.log(dx).sum() / nx / (nx-1)
@@ -218,7 +223,8 @@ def zech_aslan(x,y):
 
     return phix + phiy + phixy
 
-def friedman_rafsky(x,y):
+
+def friedman_rafsky(x, y):
     """
     Compute a dissimilarity metric based on the Friedman-Rafsky runs statistics.
 
@@ -252,12 +258,12 @@ def friedman_rafsky(x,y):
     ny, d = y.shape
     n = nx+ny
 
-    xy = np.vstack([x,y])
+    xy = np.vstack([x, y])
 
     # Compute the NNs and the minimum spanning tree
-    G = neighbors.kneighbors_graph(xy, n_neighbors=n-1, mode='distance')
-    MST = minimum_spanning_tree(G, overwrite=True)
-    edges = np.array(MST.nonzero()).T
+    g = neighbors.kneighbors_graph(xy, n_neighbors=n-1, mode='distance')
+    mst = minimum_spanning_tree(g, overwrite=True)
+    edges = np.array(mst.nonzero()).T
 
     # Number of points whose neighbor is from the other sample
     diff = np.logical_xor(*(edges < nx).T).sum()
@@ -265,7 +271,7 @@ def friedman_rafsky(x,y):
     return 1. - (1. + diff)/n
 
 
-def kolmogorov_smirnov(x,y):
+def kolmogorov_smirnov(x, y):
     """
     Compute the Kolmogorov-Smirnov statistic applied to two multivariate
     samples as described by Fasano and Franceschini [1]_.
@@ -290,31 +296,32 @@ def kolmogorov_smirnov(x,y):
     """
     x, y = reshape_sample(x, y)
 
-    def pivot(x,y):
+    def pivot(x, y):
         nx, d = x.shape
         ny, d = y.shape
-        n = nx + ny
 
         # Multiplicating factor converting d-dim booleans to a unique integer.
         mf = (2 ** np.arange(d)).reshape(1, d, 1)
         l = 2 ** d
 
         # Assign a unique integer according on whether or not x[i] <= sample
-        ix = ( (x.T <= np.atleast_3d(x)) * mf ).sum(1)
-        iy = ( (x.T <= np.atleast_3d(y)) * mf ).sum(1)
+        ix = ((x.T <= np.atleast_3d(x)) * mf).sum(1)
+        iy = ((x.T <= np.atleast_3d(y)) * mf).sum(1)
 
         # Count the number of samples in each quadrant
         cx = 1. * np.apply_along_axis(np.bincount, 0, ix, minlength=l) / nx
         cy = 1. * np.apply_along_axis(np.bincount, 0, iy, minlength=l) / ny
 
         # This is from https://github.com/syrte/ndtest/blob/master/ndtest.py
-        #D = cx - cy
-        #D[0,:] -= 1. / nx # I don't understand this...
-        #dmin, dmax = -D.min(), D.max() + .1 / nx
+        # D = cx - cy
+        # D[0,:] -= 1. / nx # I don't understand this...
+        # dmin, dmax = -D.min(), D.max() + .1 / nx
+
         return np.max(np.abs(cx-cy))
 
-    return max(pivot(x,y), pivot(y,x))
-#
+    return max(pivot(x, y), pivot(y, x))
+
+
 def kldiv(x, y, k=1):
     """
     Compute the Kullback-Leibler divergence between two multivariate samples.
@@ -376,11 +383,11 @@ def kldiv(x, y, k=1):
 
     x, y = reshape_sample(x, y)
 
-    nx, dx = x.shape
-    ny, dy = y.shape
+    nx, d = x.shape
+    ny, d = y.shape
 
-    # Limit the number of dimensions to 10. The algorithm becomes slow otherwise.
-    assert (dx < 10)
+    # Limit the number of dimensions to 10, too slow otherwise.
+    assert (d < 10)
 
     # Not enough data to draw conclusions.
     if nx < 5 or ny < 5:
@@ -393,15 +400,19 @@ def kldiv(x, y, k=1):
     # Get the k'th nearest neighbour from each points in x for both x and y.
     # We get the values for K + 1 to make sure the output is a 2D array.
     K = max(ka) + 1
-    r, indx = xtree.query(x, k=K, eps=0, p=2, n_jobs=2);
-    s, indy = ytree.query(x, k=K, eps=0, p=2, n_jobs=2);
+    r, indx = xtree.query(x, k=K, eps=0, p=2, n_jobs=2)
+    s, indy = ytree.query(x, k=K, eps=0, p=2, n_jobs=2)
 
-    # There is a mistake in the paper. In Eq. 14, the right side misses a negative sign 
-    # on the first term of the right hand side. 
+    # There is a mistake in the paper. In Eq. 14, the right side misses a
+    # negative sign on the first term of the right hand side.
     D = []
     for ki in ka:
-        # The 0th nearest neighbour in x of x is x, hence we take the k'th + 1, which is 0-based indexing is given by index k.
-        D.append(-np.log(r[:, ki] / s[:, ki - 1]).sum() * dx / nx + np.log(ny / (nx - 1.)))
+        # The 0th nearest neighbour of x[i] in x is x[i] itself.
+        # Hence we take the k'th + 1, which in 0-based indexing is given by
+        # index k.
+        D.append(
+            -np.log(r[:, ki] / s[:, ki - 1]).sum() * d / nx +
+            np.log(ny / (nx - 1.)))
 
     if mk:
         return D
