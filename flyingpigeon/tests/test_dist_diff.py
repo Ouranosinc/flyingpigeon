@@ -47,21 +47,6 @@ def test_randn():
     aaeq(r.mean(0), mu)
     aaeq(r.std(0, ddof=1), std)
 
-class TestSED():
-    def test_compare_with_scipy(self):
-        d = 2
-        n = 20
-        x = np.random.rand(n,d)
-        y = np.random.rand(n,d)
-
-        V = np.std(x,0) * np.std(y,0)
-
-        D = [spatial.distance.seuclidean(x[i,:], y[i,:], V) for i in range(n)]
-
-        X = dd.SED(x,y)
-
-        aaeq(X, D)
-
 class TestSEuclidean():
     def test_simple(self):
         d = 2
@@ -129,6 +114,12 @@ class TestFR():
     def test_compare_with_matlab(self):
         x, y = matlab_sample()
         dm = dd.friedman_rafsky(x, y)
+        aaeq(dm, 0.96667, 4)
+
+class TestKS():
+    def test_compare_with_matlab(self):
+        x, y = matlab_sample()
+        dm = dd.kolmogorov_smirnov(x, y)
         aaeq(dm, 0.96667, 4)
 
 # ==================================================================== #

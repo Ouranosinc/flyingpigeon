@@ -1,18 +1,34 @@
 # -*- encoding: utf8 -*-
 """
-Methods to compute differences between distributions
-====================================================
+Methods to compute the (dis)similarity between samples
+======================================================
 
+This module implements five of the six methods described in [1]_ to measure
+the dissimlarity between two samples. Some of these algorithms can be used to
+test whether or not two samples have been drawn from the same distribution.
+Here, they are used to find areas with analog climate conditions to a target
+climate.
+
+Methods available
+-----------------
  * Standardized Euclidean Distance
  * Nearest Neighbour
  * Zech-Aslan statistic
  * Friedman-Rasfsky run statistic
  * Kullback-Leibler divergence
 
- 
- * others to be implemented, see Grenier, Patrick, et al. "An assessment of six dissimilarity metrics for climate analogs." Journal of Applied Meteorology and Climatology 52.4 (2013): 733-752.
+
+References
+----------
+.. [1] Grenier, Patrick, et al. (2013) "An assessment of six dissimilarity
+   metrics for climate analogs." Journal of Applied Meteorology and Climatology
+   52.4, 733-752, DOI: 10.1175/JAMC-D-12-0170.1
+
+"""
+#Szekely, G, Rizzo, M (2014) Energy statistics: A class of statistics based on distances. J Stat Planning & Inference 143: 1249-1272
 
 
+"""
 kldiv
 -----
 Empirical Kullback-Leibler divergence for continuous distributions.
@@ -47,30 +63,36 @@ References
 :institution: Ouranos inc. 
 """
 
-__all__ = ['kldiv', ]
+__all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan', 'friedman_rafsky', 'kldiv', ]
 
 import bisect
 import numpy as np
 from scipy import spatial
 from scipy.spatial import cKDTree as KDTree
 
-def SED(x,y):
-    """Standardized Euclidean Distance between x and y."""
-
-    sx = np.std(x, 0)
-    sy = np.std(y, 0)
-
-    return np.sqrt( ((x-y)**2 / sx / sy).sum(1) )
-
-
-def check_sample_shape(x,y):
+# ---------------------------------------------------------------------------- #
+# -------------------------- Utility functions ------------------------------- #
+# ---------------------------------------------------------------------------- #
+def reshape_sample(x, y):
     """
-    Make sure x and y conform to the conventions used in all the dissimilarity metrics. x and y should be (n,d) and
-    (m,d) arrays.
+    Reshape the input arrays to conform to the conventions used in the
+    dissimilarity metrics.
 
-    :param x: array of the reference sample.
-    :param y: array of the candidate sample.
-    :return: Return two-dimensional arrays (n,d), (m,d).
+    Parameters
+    ----------
+    x, y : array_like
+      Arrays to be compared.
+
+    Returns
+    -------
+    x, y : array_like
+      Arrays of shape (n,d) and (m,d), where `n` and `m` are the number of
+      samples and `d` is the dimension.
+
+    Raises
+    ------
+    AssertionError
+        If x and y have different dimensions.
     """
     x = np.atleast_2d(x)
     y = np.atleast_2d(y)
@@ -88,45 +110,88 @@ def check_sample_shape(x,y):
     assert (dx == dy)
 
     return x,y
-
+#
 def standardize(x,y):
-    """Standardize x and y by the square root of the product of their standard deviation.
+    """
+    Standardize x and y by the square root of the product of their standard
+    deviation.
 
-    :param x: Array (n,d)
-    :param y: Array (m,d)
-    :return: Standardized arrays x', y'
+    Parameters
+    ----------
+    x, y : ndarray
+        Arrays to be compared.
+
+    Returns
+    -------
+    x, y : ndarray
+        Standardized arrays.
     """
     s = np.sqrt(x.std(0, ddof=1) * y.std(0, ddof=1))
     return x/s, y/s
 
+# ---------------------------------------------------------------------------- #
+# ------------------------ Dissimilarity metrics ----------------------------- #
+# ---------------------------------------------------------------------------- #
+
 def seuclidean(x, y):
-    """Compute the Euclidean distance between the mean of a multivariate candidate sample (y) with respect to the mean
-    of a reference sample (x).
-
-    This metric considers neither the information from individual points nor the standard deviation of the candidate
-    distribution.
-
-    :param x: Array (n,d) of reference sample.
-    :param y: Array (m,d) of candidate sample.
-    :return: Standardized Euclidean Distance between the mean of the samples ranging from 0 to infinity.
     """
-    x,y = check_sample_shape(x,y)
+    Compute the Euclidean distance between the mean of a multivariate
+    candidate sample with respect to the mean of a reference sample.
+
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Standardized Euclidean Distance between the mean of the samples
+        ranging from 0 to infinity.
+
+    Notes
+    -----
+    This metric considers neither the information from individual points nor
+    the standard deviation of the candidate distribution.
+
+    References
+    ----------
+    Veloz et al. (2011) Identifying climatic analogs for Wisconsin under
+    21st-century climate-change scenarios. Climatic Change,
+    DOI 10.1007/s10584-011-0261-z.
+    """
+    x,y = reshape_sample(x, y)
 
     mx = x.mean(0)
     my = y.mean(0)
 
     return spatial.distance.seuclidean(mx, my, x.var(0, ddof=1))
-
+#
 def nearest_neighbor(x,y):
     """
-    Compute a dissimilarity metric based on the number of points in the pooled sample whose nearest neighbor belongs to
-    the same distribution.
+    Compute a dissimilarity metric based on the number of points in the
+    pooled sample whose nearest neighbor belongs to the same distribution.
 
-    :param x: Reference sample.
-    :param y: Candidate sample.
-    :return: Nearest-Neighbor dissimilarity metric ranging from 0 to 1.
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Nearest-Neighbor dissimilarity metric ranging from 0 to 1.
+
+    References
+    ----------
+    Henze N. (1988) A Multivariate two-sample test based on the number of
+    nearest neighbor type coincidences. Ann. of Stat., Vol. 16, No.2, 772-783.
     """
-    x, y = check_sample_shape(x, y)
+    x, y = reshape_sample(x, y)
     x, y = standardize(x, y)
 
     nx, dx = x.shape
@@ -140,49 +205,78 @@ def nearest_neighbor(x,y):
     same = ~np.logical_xor(*(ind < nx).T)
 
     return same.mean()
-
-
+#
 def zech_aslan(x,y):
     """
-    Compute a dissimimilarity metric based on an analogy with the energy of a cloud of electrical charges.
+    Compute the Zech-Aslan dissimimilarity metric based on an analogy with
+    the energy of a cloud of electrical charges.
 
-    :param x: Reference sample.
-    :param y: Candidate sample
-    :return: Zech-Aslan dissimilarity metric ranging from -infinity to infinity.
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Zech-Aslan dissimilarity metric ranging from -infinity to infinity.
+
+    References
+    ----------
+    Zech G. and Aslan B. (2003) A Multivariate two-sample test based on the
+    concept of minimum energy. PHYStat2003, SLAC, Stanford, CA, Sep 8-11.
+    Aslan B. and Zech G. (2008) A new class of binning-free, multivariate
+    goodness-of-fit tests: the energy tests. arXiV:hep-ex/0203010v5.
     """
 
-    x, y = check_sample_shape(x, y)
+    x, y = reshape_sample(x, y)
     nx, d = x.shape
     ny, d = y.shape
 
-    xy = np.vstack([x,y])
     v = x.std(0, ddof=1) * y.std(0, ddof=1)
-    #v = xy.std(0, ddof=1)
 
     dx  = spatial.distance.pdist(x, 'seuclidean', V=v)
     dy  = spatial.distance.pdist(y, 'seuclidean', V=v)
-    dxy = spatial.distance.squareform( spatial.distance.pdist(xy, 'seuclidean', V=v))
+    dxy = spatial.distance.cdist(x, y, 'seuclidean', V=v)
 
-    phix = -np.log(dx).sum()/nx/(nx-1)
-    phiy = -np.log(dy).sum()/ny/(ny-1)
-    phixy = np.log(dxy[nx:, :nx]).sum() / nx / ny
+    phix = -np.log(dx).sum() / nx / (nx-1)
+    phiy = -np.log(dy).sum() / ny / (ny-1)
+    phixy = np.log(dxy).sum() / nx / ny
 
     return phix + phiy + phixy
 
 def friedman_rafsky(x,y):
-    """Compute a dissimilarity metric based on the Friedman-Rafsky runs statistics.
+    """
+    Compute a dissimilarity metric based on the Friedman-Rafsky runs statistics.
 
-    The algorithm builds a minimal spanning tree (the subset of edges connecting all points that minimizes the total
-    edge length) then counts the edges linking points from the same distribution.
+    The algorithm builds a minimal spanning tree (the subset of edges
+    connecting all points that minimizes the total edge length) then counts
+    the edges linking points from the same distribution.
 
-    :param x: Reference sample array (n,d).
-    :param y: Candidate sample array (m,d).
-    :return: Friedman-Rafsky dissimilarity metric ranging from 0 to (m+n-1)/(m+n).
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Friedman-Rafsky dissimilarity metric ranging from 0 to (m+n-1)/(m+n).
+
+    References
+    ----------
+    Friedman J.H. and Rafsky L.C. (1979) Multivariate generaliations of the
+    Wald-Wolfowitz and Smirnov two-sample tests. Annals of Stat. Vol.7,
+    No. 4, 697-717.
     """
     from sklearn import neighbors
     from scipy.sparse.csgraph import minimum_spanning_tree
 
-    x, y = check_sample_shape(x, y)
+    x, y = reshape_sample(x, y)
     nx, d = x.shape
     ny, d = y.shape
     n = nx+ny
@@ -200,6 +294,55 @@ def friedman_rafsky(x,y):
     return 1. - (1. + diff)/n
 
 
+def kolmogorov_smirnov(x,y):
+    """
+    Compute the Kolmogorov-Smirnov statistic applied to two multivariate
+    samples as described by Fasano and Franceschini [1]_.
+
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Kolmogorov-Smirnov dissimilarity metric ranging from 0 to 1.
+
+    References
+    ----------
+    .. [1] Fasano G. and Francheschini A. (1987) A multidimensional version
+       of the Kolmogorov-Smirnov test. Monthly Notices of the Royal
+       Astronomical Society, vol. 225, pp. 155-170.
+    """
+    x, y = reshape_sample(x, y)
+
+    def pivot(x,y):
+        nx, d = x.shape
+        ny, d = y.shape
+        n = nx + ny
+
+        # Multiplicating factor converting d-dim booleans to a unique integer.
+        mf = (2 ** np.arange(d)).reshape(1, d, 1)
+        l = 2 ** d
+
+        # Assign a unique integer according on whether or not x[i] <= sample
+        ix = ( (x.T <= np.atleast_3d(x)) * mf ).sum(1)
+        iy = ( (x.T <= np.atleast_3d(y)) * mf ).sum(1)
+
+        # Count the number of samples in each quadrant
+        cx = 1. * np.apply_along_axis(np.bincount, 0, ix, minlength=l) / nx
+        cy = 1. * np.apply_along_axis(np.bincount, 0, iy, minlength=l) / ny
+
+        # This is from https://github.com/syrte/ndtest/blob/master/ndtest.py
+        #D = cx - cy
+        #D[0,:] -= 1. / nx # I don't understand this...
+        #dmin, dmax = -D.min(), D.max() + .1 / nx
+        return np.max(np.abs(cx-cy))
+
+    return max(pivot(x,y), pivot(y,x))
 
 
 def kldiv(x, y, k=1):
@@ -243,7 +386,7 @@ def kldiv(x, y, k=1):
     mk = np.iterable(k)
     ka = np.atleast_1d(k)
 
-    x, y = check_sample_shape(x, y)
+    x, y = reshape_sample(x, y)
 
     nx, dx = x.shape
     ny, dy = y.shape
