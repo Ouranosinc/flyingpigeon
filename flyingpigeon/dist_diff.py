@@ -1,4 +1,8 @@
 # -*- encoding: utf8 -*-
+import numpy as np
+from scipy import spatial
+from scipy.spatial import cKDTree as KDTree
+
 """
 Methods to compute the (dis)similarity between samples
 ======================================================
@@ -24,51 +28,17 @@ References
    metrics for climate analogs." Journal of Applied Meteorology and Climatology
    52.4, 733-752, DOI: 10.1175/JAMC-D-12-0170.1
 
-"""
-#Szekely, G, Rizzo, M (2014) Energy statistics: A class of statistics based on distances. J Stat Planning & Inference 143: 1249-1272
 
-
-"""
-kldiv
------
-Empirical Kullback-Leibler divergence for continuous distributions.
-
-In information theory, the Kullback–Leibler divergence is a non-symmetric 
-measure of the difference between two probability distributions P and Q, 
-where P is the "true" distribution and Q an approximation. This nuance is
-important because D(P||Q) is not equal to D(Q||P). 
-    
-For probability distributions P and Q of a continuous random variable,
-the K–L  divergence is defined as:
-    
-        D_{KL}(P||Q) = \int p(x) \log{p()/q(x)} dx
-    
-This formula assumes we have a representation of the probability densities p(x) and q(x). 
-In many cases, we only have samples from the distribution, and most methods first 
-estimate the densities from the samples and then proceed to compute the
-K-L divergence. In [1], the authors propose an algorithm to estimate the K-L divergence 
-directly from the sample using an empirical CDF. Even though the CDFs do not converge to their 
-true values, the paper proves that the K-L divergence almost surely does converge to its true 
-value. 
-
-
-References
-----------
-
-[1] Kullback-Leibler Divergence Estimation of Continuous Distributions (2008). Fernando Pérez-Cruz.
-
-
-
-:author: David Huard
-:institution: Ouranos inc. 
+:author: David Huard, Patrick Grenier
+:institution: Ouranos inc.
 """
 
-__all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan', 'friedman_rafsky', 'kldiv', ]
+# TODO: Szekely, G, Rizzo, M (2014) Energy statistics: A class of statistics
+# based on distances. J Stat Planning & Inference 143: 1249-1272
 
-import bisect
-import numpy as np
-from scipy import spatial
-from scipy.spatial import cKDTree as KDTree
+__all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan', 'friedman_rafsky',
+           'kldiv', ]
+
 
 # ---------------------------------------------------------------------------- #
 # -------------------------- Utility functions ------------------------------- #
@@ -109,9 +79,10 @@ def reshape_sample(x, y):
     # Check the arrays have the same dimension.
     assert (dx == dy)
 
-    return x,y
-#
-def standardize(x,y):
+    return x, y
+
+
+def standardize(x, y):
     """
     Standardize x and y by the square root of the product of their standard
     deviation.
@@ -343,11 +314,12 @@ def kolmogorov_smirnov(x,y):
         return np.max(np.abs(cx-cy))
 
     return max(pivot(x,y), pivot(y,x))
-
-
+#
 def kldiv(x, y, k=1):
-    """Compute the Kullback-Leibler divergence between two multivariate samples.
-    
+    """
+    Compute the Kullback-Leibler divergence between two multivariate samples.
+
+    .. math
         D(P||Q) = \frac{d}{n} \sum_i^n \log{\frac{r_k(x_i)}{s_k(x_i)}} + \log{\frac{m}{n-1}}
         
     where r_k(x_i) and s_k(x_i) are, respectively, the euclidean distance 
@@ -356,31 +328,47 @@ def kldiv(x, y, k=1):
 
     Parameters
     ----------
-    x : 2D array (n,d)
-      Samples from distribution P, which typically represents the true 
-      distribution (reference).
-    y : 2D array (m,d)
-      Samples from distribution Q, which typically represents the 
-      approximate distribution (candidate)
+    x : ndarray (n,d)
+        Samples from distribution P, which typically represents the true
+        distribution (reference).
+    y : ndarray (m,d)
+        Samples from distribution Q, which typically represents the
+        approximate distribution (candidate)
     k : int or sequence
-      The kth neighbours to look for when estimating the density of the
-      distributions. Defaults to 1, which can be noisy. 
+        The kth neighbours to look for when estimating the density of the
+        distributions. Defaults to 1, which can be noisy.
 
-          
     Returns
     -------
     out : float or sequence
-      The estimated Kullback-Leibler divergence D(P||Q) computed from 
-      the distances to the kth neighbour. 
+        The estimated Kullback-Leibler divergence D(P||Q) computed from
+        the distances to the kth neighbour.
       
     Notes
     -----
-    The formula is based on the distance to the kth nearest neighbor, 
-    which is roughly proportional to the density. If we use the first 
-    neighbor, the result is more noisy than if we a farther neighbour, 
-    at the expense of precision in the comparison between the two 
-    distributions. 
-      
+    In information theory, the Kullback–Leibler divergence is a non-symmetric
+    measure of the difference between two probability distributions P and Q,
+    where P is the "true" distribution and Q an approximation. This nuance is
+    important because D(P||Q) is not equal to D(Q||P).
+
+    For probability distributions P and Q of a continuous random variable,
+    the K–L  divergence is defined as:
+
+        D_{KL}(P||Q) = \int p(x) \log{p()/q(x)} dx
+
+    This formula assumes we have a representation of the probability
+    densities p(x) and q(x).  In many cases, we only have samples from the
+    distribution, and most methods first estimate the densities from the
+    samples and then proceed to compute the K-L divergence. In [1]_,
+    the authors propose an algorithm to estimate the K-L divergence directly
+    from the sample using an empirical CDF. Even though the CDFs do not
+    converge to their true values, the paper proves that the K-L divergence
+    almost surely does converge to its true value.
+
+    References
+    ----------
+    .. [1] Kullback-Leibler Divergence Estimation of Continuous Distributions (
+       2008). Fernando Pérez-Cruz.
     """
 
     mk = np.iterable(k)
