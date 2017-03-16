@@ -5,6 +5,131 @@ import numpy as np
 from numpy.testing import assert_equal as aeq, assert_almost_equal as aaeq
 from scipy import stats
 from scipy import integrate
+from scipy import spatial
+
+
+def matlab_sample(n=30):
+    """
+    In some of the following tests I'm using Matlab code written by Patrick Grenier for the paper "An Assessment of
+    Six Dissimilarity Metrics for Climate Analogs" to compare against the functions here. The sample created here is
+    identical to the sample used to drive the Matlab code.
+
+    :param n:
+    :return:
+    """
+
+    z = 1. * (np.arange(n) + 1 ) / n - .5
+
+    x = np.vstack([
+        z * 2 + 30,
+        z * 3 + 40,
+        z
+    ]).T
+
+    y = np.vstack([
+        z * 2.2 + 31,
+        z[::-1] * 2.8 + 38,
+        z * 1.1
+    ]).T
+
+    return x, y
+
+def randn(mean, std, shape):
+    """Return a random normal sample with exact mean and standard deviation."""
+    r = np.random.randn(*shape)
+    r1 = r/r.std(0, ddof=1) * np.array(std)
+    return r1 - r1.mean(0) + np.array(mean)
+
+
+def test_randn():
+    mu, std = [2, 3], [1,2]
+    r = randn(mu, std, [10,2])
+    aaeq(r.mean(0), mu)
+    aaeq(r.std(0, ddof=1), std)
+
+class TestSED():
+    def test_compare_with_scipy(self):
+        d = 2
+        n = 20
+        x = np.random.rand(n,d)
+        y = np.random.rand(n,d)
+
+        V = np.std(x,0) * np.std(y,0)
+
+        D = [spatial.distance.seuclidean(x[i,:], y[i,:], V) for i in range(n)]
+
+        X = dd.SED(x,y)
+
+        aaeq(X, D)
+
+class TestSEuclidean():
+    def test_simple(self):
+        d = 2
+        n,m = 25, 30
+
+        x = randn(0, 1, (n,d))
+        y = randn([1,2], 1, (m,d))
+        dm = dd.seuclidean(x,y)
+        aaeq(dm, np.hypot(1,2), 2)
+
+        # Variance of the candidate sample does not affect answer.
+        x = randn(0, 1, (n, d))
+        y = randn([1, 2], 2, (m, d))
+        dm = dd.seuclidean(x, y)
+        aaeq(dm, np.hypot(1, 2), 2)
+
+    def test_compare_with_matlab(self):
+        x, y = matlab_sample()
+        dm = dd.seuclidean(x,y)
+        aaeq(dm, 2.8463, 4)
+
+
+class TestNN():
+    def test_simple(self):
+        d = 2
+        n, m = 200, 200
+        x = np.random.randn(n, d)
+        y = np.random.randn(m, d)
+
+        # Almost identical samples
+        dm = dd.nearest_neighbor(x+.001, x)
+        aaeq(dm, 0, 1)
+
+        # Same distribution but mixed
+        dm = dd.nearest_neighbor(x,y)
+        aaeq(dm, 0.5, 1)
+
+        # Two completely different distributions
+        dm = dd.nearest_neighbor(x+10, y)
+        aaeq(dm, 1, 1)
+
+    def test_compare_with_matlab(self):
+        x, y = matlab_sample()
+        dm = dd.nearest_neighbor(x, y)
+        aaeq(dm, 1, 4)
+
+
+class TestZAE():
+    def test_simple(self):
+        d = 2
+        n, m = 200, 200
+        x = np.random.randn(n, d)
+        y = np.random.randn(m, d)
+
+        # Almost identical samples
+        dm = dd.zech_aslan(x + .001, x)
+        assert dm < 0
+
+    def test_compare_with_matlab(self):
+        x, y = matlab_sample()
+        dm = dd.zech_aslan(x,y)
+        aaeq(dm, 0.77802, 4)
+
+class TestFR():
+    def test_compare_with_matlab(self):
+        x, y = matlab_sample()
+        dm = dd.friedman_rafsky(x, y)
+        aaeq(dm, 0.96667, 4)
 
 # ==================================================================== #
 #                       Analytical results
