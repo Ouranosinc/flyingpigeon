@@ -15,10 +15,11 @@ climate.
 
 Methods available
 -----------------
- * Standardized Euclidean Distance
- * Nearest Neighbour
- * Zech-Aslan statistic
- * Friedman-Rafsky run statistic
+ * Standardized Euclidean distance
+ * Nearest Neighbour distance
+ * Zech-Aslan energy statistic
+ * Friedman-Rafsky runs statistic
+ * Kolmogorov-Smirnov statistic
  * Kullback-Leibler divergence
 
 
@@ -184,8 +185,8 @@ def nearest_neighbor(x, y):
 
 def zech_aslan(x, y):
     """
-    Compute the Zech-Aslan dissimimilarity metric based on an analogy with
-    the energy of a cloud of electrical charges.
+    Compute the Zech-Aslan energy distance dissimimilarity metric based on an
+    analogy with the energy of a cloud of electrical charges.
 
     Parameters
     ----------
@@ -217,11 +218,57 @@ def zech_aslan(x, y):
     dy = spatial.distance.pdist(y, 'seuclidean', V=v)
     dxy = spatial.distance.cdist(x, y, 'seuclidean', V=v)
 
+
     phix = -np.log(dx).sum() / nx / (nx-1)
     phiy = -np.log(dy).sum() / ny / (ny-1)
     phixy = np.log(dxy).sum() / nx / ny
-
     return phix + phiy + phixy
+
+def skezely_rizzo(x, y):
+    """
+    Compute the Skezely-Rizzo energy distance dissimimilarity metric
+    based on an analogy with the energy of a cloud of electrical charges.
+
+    Parameters
+    ----------
+    x : ndarray (n,d)
+        Reference sample.
+    y : ndarray (m,d)
+        Candidate sample.
+
+    Returns
+    -------
+    float
+        Skezely-Rizzo dissimilarity metric ranging from -infinity to infinity.
+
+    References
+    ----------
+    TODO
+    """
+
+    x, y = reshape_sample(x, y)
+    nx, d = x.shape
+    ny, d = y.shape
+
+    v = x.std(0, ddof=1) * y.std(0, ddof=1)
+
+    dx = spatial.distance.pdist(x, 'seuclidean', V=v)
+    dy = spatial.distance.pdist(y, 'seuclidean', V=v)
+    dxy = spatial.distance.cdist(x, y, 'seuclidean', V=v)
+
+    phix = -np.log(dx).sum() / nx / (nx - 1)
+    phiy = -np.log(dy).sum() / ny / (ny - 1)
+    phixy = np.log(dxy).sum() / nx / ny
+
+    #z = dxy.sum() * 2. / (nx*ny) - (1./nx**2) *
+
+    #z = (2 / (n * m)) * sum(dxy(:)) - (1 / (n ^ 2)) * sum(2 * dx) - (1 /
+    #  (m ^ 2)) * sum(2 * dy);
+    #z = ((n * m) / (n + m)) * z;
+
+    raise NotImplementedError
+
+
 
 
 def friedman_rafsky(x, y):
