@@ -1,6 +1,8 @@
 """
-Processes for spatial analog calculation 
-Author: Nils Hempelmann (info@nilshempelmann.de), David Huard (huard.david@ouranos.ca)
+Processes for spatial analog calculation
+
+Author: David Huard (huard.david@ouranos.ca),
+        Nils Hempelmann (info@nilshempelmann.de)
 """
 #import tarfile
 #import os
@@ -13,12 +15,81 @@ from flyingpigeon import dist_diff as dd
 # from flyingpigeon.utils import archive
 import json, datetime as dt
 import netCDF4 as nc
+import ocgis
+from ocgis.calc import base
+from ocgis.util.helpers import iter_array
+from ocgis.calc.base import AbstractMultivariateFunction, \
+    AbstractParameterizedFunction, AbstractFieldFunction
 
 logger = logging.getLogger(__name__)
 
-from flyingpigeon.sdm import _SDMINDICES_
+class Dissimilarity(AbstractFieldFunction,
+        AbstractParameterizedFunction):
 
-class SDMProcess(WPSProcess):
+    key = 'dissimilarity'
+    long_name = 'Dissimilarity metric comparing two samples'
+    standard_name = 'dissimilarity_metric'
+    description = 'Metric evaluating the dissimilarity between two ' \
+                  'multivariate samples'
+    parms_definition = {'algo': str, 'reference': np.ndarray}
+    required_variables = ['candidate', 'reference']
+    _potential_algo = dd.__all__
+
+
+    def calculate(self, reference=None, candidate=None, algo='seuclidean'):
+        assert (algo in self._potential_algo)
+        metric = getattr(dd, algo) # Get the function from the module.
+
+        # Access the variable object by name from the calculation field.
+        cfields = [self.field[c] for c in candidate]
+        cdata = [c.get_value() for c in cfields]
+        cv = np.array(cdata)
+
+        # Output array
+        shape_fill = cdata[0].shape[1:]
+        fill = np.zeros(shape_fill)
+
+        # Perform computation along the time axis
+        itr = iter_array(cdata[0])
+        for it, ir, ic in itr:
+            # Reference array
+            p = np.ma.masked_invalid(cv[:, :, ir, ic]).T
+
+            # Compress masked values. If resulting array is too small, the functions will simply return NaN.
+            pc = p.compress(~p.mask.any(1), 0)
+
+            if pc.shape[0] < 5:
+                fill[ir,ic] = np.nan
+                continue
+
+                fill[ir, ic] = metric(reference, pc)
+
+        variable = self.get_fill_variable(cfields[0], algo, shape_fill,
+         variable_value=np.ma.masked_invalid(fill))
+
+        # Add the output variable to calculations variable collection. This is what is returned by the execute() call.
+        self.vc.add_variable(variable)
+
+
+
+        # The get_value() call returns a numpy array. Mask is retrieved by get_mask(). You can get a masked array
+        # by using get_masked_value(). These return references.
+        #value = np.apply_along_axis(func, 0, candidate.get_value())
+
+
+        # Recommended that this method is used to create the output variables. Adds appropriate calculations attributes,
+        # extra record information for tabular output, etc. At the very least, it is import to reuse the dimensions
+        # appropriately as they contain global/local bounds for parallel IO. You can pass a masked array to
+        # "variable_value".
+        #variable = self.get_fill_variable(lhs, self.alias, lhs.dimensions,
+        # variable_value=value)
+        # Add the output variable to calculations variable collection. This is what is returned by the execute() call.
+        #self.vc.add_variable(variable)
+
+ocgis.FunctionRegistry.append(Dissimilarity)
+
+
+class SpatialAnalogProcess(WPSProcess):
     
     def __init__(self):
         WPSProcess.__init__(
@@ -27,7 +98,6 @@ class SDMProcess(WPSProcess):
             title = "Spatial Analog",
             version = "0.9",
             #metadata= [
-            #    {"title": "Bayerische Landesanstalt fuer Wald und Forstwirtschaft", "href": "http://www.lwf.bayern.de/"},
             #    {"title": "Documentation", "href": "http://flyingpigeon.readthedocs.io/en/latest/"},
             #   ],
 
@@ -92,11 +162,18 @@ class SDMProcess(WPSProcess):
         self.targetrange = self.addLiteralInput(
             identifier="targetrange",
             title="Target period",
-            abstract="Target periods (YYYY-MM-DD/YYYY-MM-DD) for climate conditions (defaults to entire timeseries). Only applies to netCDF target files.",
+            abstract="Target period (YYYY-MM-DD/YYYY-MM-DD) for climate conditions (defaults to entire timeseries). Only applies to netCDF target files.",
             default="",
             type=type(''),
             minOccurs=0,
-            maxOccurs=20,
+            maxOccurs=1,
+        )
+
+        self.targetlocation = self.addLiteralInput(
+            identifier="targetlocation",
+            title="Target geographical coordinates",
+            abstract="Geographical coordinates (lon,lat) of the target location.",
+            default=""
         )
 
         self.archive_format = self.addLiteralInput(

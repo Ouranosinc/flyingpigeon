@@ -107,7 +107,6 @@ def standardize(x, y):
 # ------------------------ Dissimilarity metrics ----------------------------- #
 # ---------------------------------------------------------------------------- #
 
-
 def seuclidean(x, y):
     """
     Compute the Euclidean distance between the mean of a multivariate
@@ -144,6 +143,20 @@ def seuclidean(x, y):
 
     return spatial.distance.seuclidean(mx, my, x.var(0, ddof=1))
 
+
+"""
+I'm wondering if there is value in writing a generator version of these
+functions, such as the example below, to optimize computations in the case
+multiple candidate samples are compared to the same reference sample.
+"""
+def seuclidean_gen(x, y):
+    mx = x.mean(0)
+
+    for vec in y:
+        my = vec.mean(0)
+        yield spatial.distance.seuclidean(mx, my, x.var(0, ddof=1))
+
+seuclidean_gen.__doc__ = seuclidean.__doc__
 
 def nearest_neighbor(x, y):
     """
