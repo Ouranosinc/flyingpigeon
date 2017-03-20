@@ -20,6 +20,7 @@ from ocgis.calc import base
 from ocgis.util.helpers import iter_array
 from ocgis.calc.base import AbstractMultivariateFunction, \
     AbstractParameterizedFunction, AbstractFieldFunction
+from ocgis.collection.field import OcgField
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,25 @@ class Dissimilarity(AbstractFieldFunction,
     standard_name = 'dissimilarity_metric'
     description = 'Metric evaluating the dissimilarity between two ' \
                   'multivariate samples'
-    parms_definition = {'algo': str, 'reference': np.ndarray}
+    parms_definition = {'algo': str, 'reference': OcgField, 'candidate':tuple}
     required_variables = ['candidate', 'reference']
     _potential_algo = dd.__all__
 
 
     def calculate(self, reference=None, candidate=None, algo='seuclidean'):
+        """
+
+        Parameters
+        ----------
+        reference : OgcField
+            The reference distribution the different candidates are compared
+            to.
+        """
         assert (algo in self._potential_algo)
         metric = getattr(dd, algo) # Get the function from the module.
+
+        ref = np.array([reference[c].get_value() for c in
+                        candidate]).squeeze().T
 
         # Access the variable object by name from the calculation field.
         cfields = [self.field[c] for c in candidate]
@@ -62,7 +74,7 @@ class Dissimilarity(AbstractFieldFunction,
                 fill[ir,ic] = np.nan
                 continue
 
-                fill[ir, ic] = metric(reference, pc)
+                fill[ir, ic] = metric(ref, pc)
 
         variable = self.get_fill_variable(cfields[0], algo, shape_fill,
          variable_value=np.ma.masked_invalid(fill))

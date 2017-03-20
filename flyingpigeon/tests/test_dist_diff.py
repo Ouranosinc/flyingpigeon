@@ -10,9 +10,10 @@ from scipy import spatial
 
 def matlab_sample(n=30):
     """
-    In some of the following tests I'm using Matlab code written by Patrick Grenier for the paper "An Assessment of
-    Six Dissimilarity Metrics for Climate Analogs" to compare against the functions here. The sample created here is
-    identical to the sample used to drive the Matlab code.
+    In some of the following tests I'm using Matlab code written by Patrick
+    Grenier for the paper "An Assessment of Six Dissimilarity Metrics for
+    Climate Analogs" to compare against the functions here. The sample
+    created here is identical to the sample used to drive the Matlab code.
 
     :param n:
     :return:
@@ -78,7 +79,7 @@ class TestNN():
 
         # Almost identical samples
         dm = dd.nearest_neighbor(x+.001, x)
-        aaeq(dm, 0, 1)
+        aaeq(dm, 0, 2)
 
         # Same distribution but mixed
         dm = dd.nearest_neighbor(x,y)
@@ -86,7 +87,8 @@ class TestNN():
 
         # Two completely different distributions
         dm = dd.nearest_neighbor(x+10, y)
-        aaeq(dm, 1, 1)
+        aaeq(dm, 1, 2)
+
 
     def test_compare_with_matlab(self):
         x, y = matlab_sample()
@@ -111,12 +113,34 @@ class TestZAE():
         aaeq(dm, 0.77802, 4)
 
 class TestFR():
+    def test_simple(self):
+        # Over these 7 points, there are 2 with edges within the same sample.
+        # [1,2]-[2,2] & [3,2]-[4,2]
+        # |
+        # |   x
+        # | o o x x
+        # | x  o
+        # |_ _ _ _ _ _ _
+        x = np.array([[1,2],[2,2], [3,1]])
+        y = np.array([[1,1], [2,4], [3,2], [4,2]])
+
+        dm = dd.friedman_rafsky(x, y)
+        aaeq(dm, 2./7, 3)
+
     def test_compare_with_matlab(self):
         x, y = matlab_sample()
         dm = dd.friedman_rafsky(x, y)
         aaeq(dm, 0.96667, 4)
 
 class TestKS():
+    def test_1D_ks_2samp(self):
+        # Compare with scipy.stats.ks_2samp
+        x = np.random.randn(50) + 1
+        y = np.random.randn(50)
+        s, p = stats.ks_2samp(x, y)
+        dm = dd.kolmogorov_smirnov(x, y)
+        aaeq(dm, s, 3)
+
     def test_compare_with_matlab(self):
         x, y = matlab_sample()
         dm = dd.kolmogorov_smirnov(x, y)
@@ -147,6 +171,19 @@ def analytical_KLDiv(p, q):
 @pytest.mark.slow
 class TestKLDIV:   
     #
+    def test_against_analytic(self):
+        p = stats.norm(2, 1)
+        q = stats.norm(2.6, 1.4)
+
+        ra = analytical_KLDiv(p, q)
+
+        N = 10000
+        x, y = p.rvs(N), q.rvs(N)
+
+        re = dd.kldiv(p.rvs(N), q.rvs(N))
+
+        aaeq(re, ra, 1)
+
     def accuracy_vs_kth(self, N=100, trials=100):
         """Evalute the accuracy of the algorithm as a function of k.
         
@@ -178,11 +215,11 @@ class TestKLDIV:
         # Return mean and standard deviation
         return err.mean(0), err.std(0)
     #    
-    def test_accuracy(self):
+    def check_accuracy(self):
         m, s = self.accuracy_vs_kth(N=500, trials=300)
         aaeq(np.mean(m[0:2]), 0, 2)
     #    
-    def test_different_sample_size(self):
+    def check_different_sample_size(self):
         
         p = stats.norm(2,1)
         q = stats.norm(2.6, 1.4)
@@ -204,9 +241,8 @@ class TestKLDIV:
     def test_mvnormal(self):
         """Compare the results to the figure 2 in the paper."""
         from numpy.random import normal, multivariate_normal
-        from numpy.testing import assert_equal, assert_almost_equal
-        
-        N = 10000
+
+        N = 30000
         p = normal(0,1, size=(N,2))
         q = multivariate_normal([.5, -.5], [[.5,.1],[.1, .3]], size=N)
         

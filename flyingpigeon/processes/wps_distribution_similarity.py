@@ -16,8 +16,8 @@ class DSProcess(WPSProcess):
   def __init__(self):
     WPSProcess.__init__(
       self,
-      identifier = "distribution_similarity",
-      title = "Similarity between distributions",
+      identifier = "distribution_dissimilarity",
+      title = "Disimilarity between distributions",
       version = "0.9",
       #metadata= [
       #    {"title": "Bayerische Landesanstalt fuer Wald und Forstwirtschaft", "href": "http://www.lwf.bayern.de/"},
