@@ -16,87 +16,11 @@ from flyingpigeon import dist_diff as dd
 import json, datetime as dt
 import netCDF4 as nc
 import ocgis
-from ocgis.calc import base
-from ocgis.util.helpers import iter_array
-from ocgis.calc.base import AbstractMultivariateFunction, \
-    AbstractParameterizedFunction, AbstractFieldFunction
-from ocgis.collection.field import OcgField
+from ..ocgisDissimilarity import Dissimilarity
 
 logger = logging.getLogger(__name__)
 
-class Dissimilarity(AbstractFieldFunction,
-        AbstractParameterizedFunction):
 
-    key = 'dissimilarity'
-    long_name = 'Dissimilarity metric comparing two samples'
-    standard_name = 'dissimilarity_metric'
-    description = 'Metric evaluating the dissimilarity between two ' \
-                  'multivariate samples'
-    parms_definition = {'algo': str, 'reference': OcgField, 'candidate':tuple}
-    required_variables = ['candidate', 'reference']
-    _potential_algo = dd.__all__
-
-
-    def calculate(self, reference=None, candidate=None, algo='seuclidean'):
-        """
-
-        Parameters
-        ----------
-        reference : OgcField
-            The reference distribution the different candidates are compared
-            to.
-        """
-        assert (algo in self._potential_algo)
-        metric = getattr(dd, algo) # Get the function from the module.
-
-        ref = np.array([reference[c].get_value() for c in
-                        candidate]).squeeze().T
-
-        # Access the variable object by name from the calculation field.
-        cfields = [self.field[c] for c in candidate]
-        cdata = [c.get_value() for c in cfields]
-        cv = np.array(cdata)
-
-        # Output array
-        shape_fill = cdata[0].shape[1:]
-        fill = np.zeros(shape_fill)
-
-        # Perform computation along the time axis
-        itr = iter_array(cdata[0])
-        for it, ir, ic in itr:
-            # Reference array
-            p = np.ma.masked_invalid(cv[:, :, ir, ic]).T
-
-            # Compress masked values. If resulting array is too small, the functions will simply return NaN.
-            pc = p.compress(~p.mask.any(1), 0)
-
-            if pc.shape[0] < 5:
-                fill[ir,ic] = np.nan
-                continue
-
-                fill[ir, ic] = metric(ref, pc)
-
-        variable = self.get_fill_variable(cfields[0], algo, shape_fill,
-         variable_value=np.ma.masked_invalid(fill))
-
-        # Add the output variable to calculations variable collection. This is what is returned by the execute() call.
-        self.vc.add_variable(variable)
-
-
-
-        # The get_value() call returns a numpy array. Mask is retrieved by get_mask(). You can get a masked array
-        # by using get_masked_value(). These return references.
-        #value = np.apply_along_axis(func, 0, candidate.get_value())
-
-
-        # Recommended that this method is used to create the output variables. Adds appropriate calculations attributes,
-        # extra record information for tabular output, etc. At the very least, it is import to reuse the dimensions
-        # appropriately as they contain global/local bounds for parallel IO. You can pass a masked array to
-        # "variable_value".
-        #variable = self.get_fill_variable(lhs, self.alias, lhs.dimensions,
-        # variable_value=value)
-        # Add the output variable to calculations variable collection. This is what is returned by the execute() call.
-        #self.vc.add_variable(variable)
 
 ocgis.FunctionRegistry.append(Dissimilarity)
 

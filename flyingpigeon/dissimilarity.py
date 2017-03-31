@@ -37,8 +37,11 @@ References
 # TODO: Szekely, G, Rizzo, M (2014) Energy statistics: A class of statistics
 # based on distances. J Stat Planning & Inference 143: 1249-1272
 
-__all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan', 'friedman_rafsky',
-           'kldiv', ]
+# TODO: Hellinger distance
+
+__all__ = ['seuclidean', 'nearest_neighbor', 'zech_aslan',
+           'kolmogorov_smirnov', 'friedman_rafsky',
+           'kldiv']
 
 
 # ---------------------------------------------------------------------------- #
@@ -237,6 +240,7 @@ def zech_aslan(x, y):
     phixy = np.log(dxy).sum() / nx / ny
     return phix + phiy + phixy
 
+
 def skezely_rizzo(x, y):
     """
     Compute the Skezely-Rizzo energy distance dissimimilarity metric
@@ -280,8 +284,6 @@ def skezely_rizzo(x, y):
     #z = ((n * m) / (n + m)) * z;
 
     raise NotImplementedError
-
-
 
 
 def friedman_rafsky(x, y):
@@ -478,5 +480,4 @@ def kldiv(x, y, k=1):
         return D
     else:
         return D[0]
-
 
