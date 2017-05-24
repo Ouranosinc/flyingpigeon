@@ -37,7 +37,11 @@ class SpatialAnalogProcess(WPSProcess):
             #    {"title": "Documentation", "href": "http://flyingpigeon.readthedocs.io/en/latest/"},
             #   ],
 
-            abstract="Spatial analogs based on the comparison of climate indices. The algorithm compares the distribution of the target indices with the distribution of spatially distribution reference indices. The return value is the spatially distributed Kullback-Leibler divergence, an information-theoretic measure of the differences between distribution. A KL divergence of 0 signifies that both distributions are equal.",
+            abstract="Spatial analogs based on the comparison of climate "
+                     "indices. The algorithm compares the distribution of the "
+                     "target indices with the distribution of spatially "
+                     "distribution reference indices and returns a value  "
+                     "measuring the dissimilarity between both distributions.",
             statusSupported=True,
             storeSupported=True
             )
