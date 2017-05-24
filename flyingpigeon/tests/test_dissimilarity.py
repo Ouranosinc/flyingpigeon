@@ -178,6 +178,7 @@ class TestKLDIV:
         ra = analytical_KLDiv(p, q)
 
         N = 10000
+        np.random.seed(2)
         x, y = p.rvs(N), q.rvs(N)
 
         re = dd.kldiv(p.rvs(N), q.rvs(N))
@@ -244,6 +245,7 @@ class TestKLDIV:
 
         N = 30000
         p = normal(0,1, size=(N,2))
+        np.random.seed(1)
         q = multivariate_normal([.5, -.5], [[.5,.1],[.1, .3]], size=N)
         
         aaeq(dd.kldiv(p,q), 1.39, 1)

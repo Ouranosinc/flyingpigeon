@@ -151,7 +151,7 @@ def seuclidean(x, y):
 I'm wondering if there is value in writing a generator version of these
 functions, such as the example below, to optimize computations in the case
 multiple candidate samples are compared to the same reference sample.
-"""
+
 def seuclidean_gen(x, y):
     mx = x.mean(0)
 
@@ -160,6 +160,8 @@ def seuclidean_gen(x, y):
         yield spatial.distance.seuclidean(mx, my, x.var(0, ddof=1))
 
 seuclidean_gen.__doc__ = seuclidean.__doc__
+"""
+
 
 def nearest_neighbor(x, y):
     """
@@ -262,6 +264,7 @@ def skezely_rizzo(x, y):
     ----------
     TODO
     """
+    raise NotImplementedError
 
     x, y = reshape_sample(x, y)
     nx, d = x.shape
@@ -283,7 +286,7 @@ def skezely_rizzo(x, y):
     #  (m ^ 2)) * sum(2 * dy);
     #z = ((n * m) / (n + m)) * z;
 
-    raise NotImplementedError
+
 
 
 def friedman_rafsky(x, y):
