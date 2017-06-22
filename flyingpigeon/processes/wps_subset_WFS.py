@@ -221,7 +221,8 @@ class WFSClippingProcess(WPSProcess):
                 variable=variable,
                 dir_output=os.path.abspath(os.curdir),
                 geomcabinet=dirpath,
-                geom=source_shp_path
+                geom=source_shp_path,
+                interpolate_spatial_bounds=True
             )
             logger.info('WPS clipping done')
         except Exception as e:

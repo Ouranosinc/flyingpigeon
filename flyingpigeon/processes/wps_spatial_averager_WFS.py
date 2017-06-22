@@ -148,7 +148,8 @@ class WFSClippingProcess(WPSProcess):
                 geom=dest_shapefile_name,
                 output_format='numpy',
                 spatial_operation='clip',
-                aggregate=True
+                aggregate=True,
+                interpolate_spatial_bounds=True
                 )
             logger.info('WPS spatial averager done')
         except Exception as e:

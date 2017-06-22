@@ -76,7 +76,8 @@ def clipping(resource=[], variable=None, dimension_map=None, calc=None,      out
                                            historical_concatination=True, prefix=None,
                                            spatial_wrapping='wrap', polygons=None, mosaic=False,
                                            dir_output=None, memory_limit=None, geomcabinet=None,
-                                           spatial_operation='intersects', geom=None, aggregate=False):
+                                           spatial_operation='intersects', geom=None, aggregate=False,
+                                           interpolate_spatial_bounds=True):
       """ returns list of clipped netCDF files
       
       :param resource: list of input netCDF files
@@ -97,6 +98,7 @@ def clipping(resource=[], variable=None, dimension_map=None, calc=None,      out
       :param geom: name of shapefile stored in birdhouse shape cabinet
       :param time_range: [start, end] of time subset
       :param time_region: year, months or days to be extracted in the timeseries
+      :param interpolate_spatial_bounds: generate lon/lat bounds when they are missing
 
       :returns list: path to clipped files 
       """
@@ -144,7 +146,8 @@ def clipping(resource=[], variable=None, dimension_map=None, calc=None,      out
                                                                          spatial_wrapping=spatial_wrapping, memory_limit=memory_limit,
                                                                          dir_output=dir_output, dimension_map=dimension_map,
                                                                          geomcabinet=geomcabinet,
-                                                                         spatial_operation=spatial_operation, aggregate=aggregate)
+                                                                         spatial_operation=spatial_operation, aggregate=aggregate,
+                                                                         interpolate_spatial_bounds=interpolate_spatial_bounds)
                         geom_files.append( geom_file ) 
                         logger.info('ocgis mosaik clipping done for %s ' % (key)) 
                   except:
@@ -174,7 +177,8 @@ def clipping(resource=[], variable=None, dimension_map=None, calc=None,      out
                                                                                      dimension_map=dimension_map, spatial_wrapping=spatial_wrapping, 
                                                                                      memory_limit=memory_limit,time_range=time_range, time_region=time_region,
                                                                                      geomcabinet=geomcabinet,
-                                                                                     spatial_operation=spatial_operation, aggregate=aggregate)
+                                                                                     spatial_operation=spatial_operation, aggregate=aggregate,
+                                                                                     interpolate_spatial_bounds=interpolate_spatial_bounds)
                                     geom_files.append( geom_file )
                                     logger.info('ocgis clipping done for %s ' % (key))
                               except:
