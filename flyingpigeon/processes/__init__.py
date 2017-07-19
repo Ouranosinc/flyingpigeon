@@ -22,6 +22,7 @@ from .wps_analogs_model import AnalogsmodelProcess
 from .wps_analogs_compare import AnalogscompareProcess
 from .wps_analogs_viewer import AnalogsviewerProcess
 from .wps_segetalflora import SegetalfloraProcess
+from .wps_subset_WFS import WFSClippingProcess
 
 processes = [
     ClippingProcess(),
@@ -47,7 +48,8 @@ processes = [
     #    AnalogsviewerProcess(),
     #    RobustnessProcess(),
     #    PlottimeseriesProcess(),
-    #    SegetalfloraProcess()
+    #    SegetalfloraProcess(),
+    WFSClippingProcess(),
 ]
 
 """
