@@ -13,9 +13,24 @@ from pywps import Format, FORMATS
 from pywps.app.Common import Metadata
 from shapely.geometry import mapping, shape
 from owslib.wfs import WebFeatureService as WFS
+import os
+import ocgis
+import netCDF4
 
 import logging
 LOGGER = logging.getLogger("PYWPS")
+
+
+def guess_main_variable(ncdataset):
+    # For now, let's just take the variable with highest dimensionality,
+    # to refine later
+    nd = 0
+    for var_name in ncdataset.variables:
+        ncvar = ncdataset.variables[var_name]
+        if len(ncvar.shape) > nd:
+            main_var = var_name
+            nd = len(ncvar.shape)
+    return main_var
 
 
 class WFSClippingProcess(Process):
@@ -125,12 +140,18 @@ class WFSClippingProcess(Process):
         response.outputs['output_log'].file = 'log.txt'
 
         ## input files
-        LOGGER.debug("url=%s, mime_type=%s",
-                     request.inputs['resource'][0].url,
-                     request.inputs['resource'][0].data_format.mime_type)
-        if request.inputs['resource'][0].url:
-            ncs = archiveextract(
-                resource=rename_complexinputs(request.inputs['resource']))
+        #LOGGER.debug("url=%s, mime_type=%s",
+        #             request.inputs['resource'][0].url,
+        #             request.inputs['resource'][0].data_format.mime_type)
+        list_of_files = []
+        for one_resource in request.inputs['resource']:
+            if one_request.url:
+                list_of_files.append(one_resource.file)
+            else:
+                list_of_files.append(one_resource.data)
+        #if request.inputs['resource'][0].url:
+        #    ncs = archiveextract(
+        #        resource=rename_complexinputs(request.inputs['resource']))
         ## mime_type=request.inputs['resource'][0].data_format.mime_type)
         ## mosaic option
         ## TODO: fix defaults in pywps 4.x
@@ -166,6 +187,31 @@ class WFSClippingProcess(Process):
         feature = wfs.getfeature([typename], featureid=features, outputFormat='application/json')
         wfs_json = json.loads(feature.read())
         geom = [shape(f['geometry']) for f in wfs_json['features']]
+        if mosaic:
+            new_geom = geom[0]
+            for merge_geom in geom[1:]:
+                new_geom = new_geom.union(merge_geom)
+        geom = new_geom
+
+        output_files = []
+        for one_file in list_of_files:
+            file_name = os.path.basename(one_file)
+            if file_name[-3:] == '.nc':
+                file_prefix = file_name[:-3]
+            else:
+                file_prefix = file_name
+            ocgis.env.DIR_OUTPUT = os.getcwd()
+            nc = netCDF4.Dataset(one_file, 'r')
+            var_name = guess_main_variable(nc)
+            nc.close()
+            rd = ocgis.RequestDataset(one_file, var_name)
+            ops = ocgis.OcgOperations(dataset=rd, geom=geom,
+                                      snippet=False, output_format='nc',
+                                      interpolate_spatial_bounds=True,
+                                      prefix=file_prefix).execute()
+            # here we could be overwriting if more than one file with same
+            # name...
+            output_files.append(ops)
 
         #try:
             #results = clipping(
@@ -203,7 +249,7 @@ class WFSClippingProcess(Process):
         if request.inputs['resource'][0].url:
             response.outputs['sometext'].data = \
                 request.inputs['resource'][0].url + ' zzz ' + \
-                str(features) + ' zzz ' + str(typename)
+                str(geom)
         else:
             response.outputs['sometext'].data = \
                 request.inputs['resource'][0].data
