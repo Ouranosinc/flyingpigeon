@@ -36,6 +36,7 @@ def test_caps():
         'sdm_gbiffetch',
         'sdm_getindices',
         # 'segetalflora',
+        'simplesttest',
         'subset_WFS',
         'subset_continents',
         'subset_countries',

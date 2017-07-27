@@ -2,7 +2,6 @@ import os
 import sys
 import unittest
 import ConfigParser
-import json
 
 from pywps import Service
 from pywps.tests import client_for
@@ -13,7 +12,7 @@ except ImportError:
     import wps_tests_utils
 
 
-class TestSubsetWFS(unittest.TestCase):
+class TestSimplest(unittest.TestCase):
 
     def setUp(self):
         self.config = ConfigParser.RawConfigParser()
@@ -21,10 +20,10 @@ class TestSubsetWFS(unittest.TestCase):
             self.config.read('configtests.cfg')
         else:
             self.config.read('flyingpigeon/tests/configtests.cfg')
-        self.config_dict = dict(self.config.items('subsetwfs'))
+        self.config_dict = dict(self.config.items('simplesttest'))
         sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
-        from flyingpigeon.processes import SubsetWFS
-        self.client = client_for(Service(processes=[SubsetWFS()]))
+        from flyingpigeon.processes import SimplestTest
+        self.client = client_for(Service(processes=[SimplestTest()]))
         self.wps_host = None
 
     def test_getcapabilities(self):
@@ -42,41 +41,36 @@ class TestSubsetWFS(unittest.TestCase):
                 self.client)
             self.assertTrue(html_response)
 
-    def test_process_exists(self):
+    def test_process_exists_pavicrawler(self):
         html_response = wps_tests_utils.wps_response(
             self.wps_host,
             '?service=WPS&request=GetCapabilities&version=1.0.0',
             self.client)
         processes = wps_tests_utils.parse_getcapabilities(html_response)
-        self.assertTrue('subset_WFS' in processes)
+        self.assertTrue('simplesttest' in processes)
 
-    def test_describeprocess(self):
+    def test_describeprocess_pavicrawler(self):
         html_response = wps_tests_utils.wps_response(
             self.wps_host,
             ('?service=WPS&request=DescribeProcess&version=1.0.0&'
-             'identifier=subset_WFS'),
+             'identifier=simplesttest'),
             self.client)
         describe_process = wps_tests_utils.parse_describeprocess(html_response)
-        self.assertTrue('mosaic' in describe_process[0]['inputs'])
-        self.assertTrue('output' in describe_process[0]['outputs'])
+        self.assertTrue('one_integer' in describe_process[0]['inputs'])
+        self.assertTrue('repeated_integer' in describe_process[0]['outputs'])
 
-    def test_subset_wfs_01(self):
+    def test_simplest_01(self):
         html_response = wps_tests_utils.wps_response(
             self.wps_host,
             ('?service=WPS&request=execute&version=1.0.0&'
-             'identifier=subset_WFS&DataInputs=resource=http://myserver/thredds/dodsC/birdhouse/nrcan/nrcan_canada_daily/nrcan_canada_daily_pr_1960.nc;'
-             'typename=usa:states;featureids=states.1;geoserver=http://myserver/geoserver/wfs'),
+             'identifier=simplesttest&DataInputs=one_integer={0}').format(
+                self.config_dict['number1']),
             self.client)
         outputs = wps_tests_utils.parse_execute_response(html_response)
-        output_file = outputs['outputs']['output']
-        if output_file[:7] == 'file://':
-            output_file = output_file[7:]
-        f1 = open(output_file, 'r')
-        json_data = json.loads(f1.read())
-        f1.close()
-        self.assertEqual(json_data, '')
+        self.assertEqual(int(outputs['outputs']['repeated_integer']),
+                         int(self.config_dict['number1']))
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestSubsetWFS)
+suite = unittest.TestLoader().loadTestsFromTestCase(TestSimplest)
 
 if __name__ == '__main__':
     run_result = unittest.TextTestRunner(verbosity=2).run(suite)
