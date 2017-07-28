@@ -30,7 +30,7 @@ json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
 url_path = configuration.get_config_value('flyingpigeon', 'base_url')
 
-class SubsetWFS(Process):
+class AveragerWFS(Process):
     def __init__(self):
         inputs = [LiteralInput('resource',
                                'Resource',
@@ -65,10 +65,10 @@ class SubsetWFS(Process):
                                  as_reference=True,
                                  supported_formats=[json_format])]
 
-        super(SubsetWFS, self).__init__(
+        super(AveragerWFS, self).__init__(
             self._handler,
-            identifier="subset_WFS",
-            title="Subset WFS",
+            identifier="averager_WFS",
+            title="Averager WFS",
             version="0.10",
             abstract=("Return the data whose grid cells intersect the "
                       "selected polygon for each input dataset."),
@@ -131,8 +131,12 @@ class SubsetWFS(Process):
             var_name = guess_main_variable(nc)
             nc.close()
             rd = ocgis.RequestDataset(one_file, var_name)
-            ops = ocgis.OcgOperations(dataset=rd, geom=geom,
-                                      snippet=False, output_format='nc',
+            # Assuming some stuff about geom here...
+            # maybe the clipping option does not accept multipolygon?
+            # to investigate
+            ops = ocgis.OcgOperations(dataset=rd, geom=geom[0]['geom'],
+                                      spatial_operation='clip', aggregate=True,
+                                      snippet=False, output_format='region-nc',
                                       interpolate_spatial_bounds=True,
                                       prefix=file_prefix).execute()
             mv_dir = tempfile.mkdtemp(dir=output_path)

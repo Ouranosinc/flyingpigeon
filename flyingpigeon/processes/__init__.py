@@ -23,6 +23,7 @@ from .wps_analogs_compare import AnalogscompareProcess
 from .wps_analogs_viewer import AnalogsviewerProcess
 from .wps_segetalflora import SegetalfloraProcess
 from .wps_subset_WFS import SubsetWFS
+from .wps_averager_WFS import AveragerWFS
 from .wps_simplesttest import SimplestTest
 
 processes = [
@@ -50,6 +51,7 @@ processes = [
     #    RobustnessProcess(),
     #    PlottimeseriesProcess(),
     #    SegetalfloraProcess(),
+    AveragerWFS(),
     SubsetWFS(),
     SimplestTest(),
 ]

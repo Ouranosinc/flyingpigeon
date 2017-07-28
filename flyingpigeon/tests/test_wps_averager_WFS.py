@@ -14,7 +14,7 @@ except ImportError:
     import wps_tests_utils
 
 
-class TestSubsetWFS(unittest.TestCase):
+class TestAveragerWFS(unittest.TestCase):
 
     def setUp(self):
         self.config = ConfigParser.RawConfigParser()
@@ -24,8 +24,8 @@ class TestSubsetWFS(unittest.TestCase):
             self.config.read('flyingpigeon/tests/configtests.cfg')
         self.config_dict = dict(self.config.items('subsetwfs'))
         sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
-        from flyingpigeon.processes import SubsetWFS
-        self.client = client_for(Service(processes=[SubsetWFS()]))
+        from flyingpigeon.processes import AveragerWFS
+        self.client = client_for(Service(processes=[AveragerWFS()]))
         self.wps_host = None
 
     def test_getcapabilities(self):
@@ -49,26 +49,26 @@ class TestSubsetWFS(unittest.TestCase):
             '?service=WPS&request=GetCapabilities&version=1.0.0',
             self.client)
         processes = wps_tests_utils.parse_getcapabilities(html_response)
-        self.assertTrue('subset_WFS' in processes)
+        self.assertTrue('averager_WFS' in processes)
 
     def test_describeprocess(self):
         html_response = wps_tests_utils.wps_response(
             self.wps_host,
             ('?service=WPS&request=DescribeProcess&version=1.0.0&'
-             'identifier=subset_WFS'),
+             'identifier=averager_WFS'),
             self.client)
         describe_process = wps_tests_utils.parse_describeprocess(html_response)
         self.assertTrue('mosaic' in describe_process[0]['inputs'])
         self.assertTrue('output' in describe_process[0]['outputs'])
 
-    def test_subset_wfs_01(self):
+    def test_averager_wfs_01(self):
         wps_tests_utils.config_is_available(
             ['netcdf_file_01', 'typename_01', 'featureids_01', 'geoserver_01'],
             self.config_dict)
         html_response = wps_tests_utils.wps_response(
             self.wps_host,
             ('?service=WPS&request=execute&version=1.0.0&'
-             'identifier=subset_WFS&DataInputs=resource={0};'
+             'identifier=averager_WFS&DataInputs=resource={0};'
              'typename={1};featureids={2};geoserver={3}').format(
                 self.config_dict['netcdf_file_01'],
                 self.config_dict['typename_01'],
@@ -96,17 +96,17 @@ class TestSubsetWFS(unittest.TestCase):
         nclon = nc.variables['lon']
         nclat = nc.variables['lat']
         ncvar = nc.variables['dummy']
-        self.assertEqual(nclon.shape, (3, 3))
-        self.assertEqual(nclat.shape, (3, 3))
-        self.assertEqual(nclon[0,0], 13)
-        self.assertEqual(nclon[2,2], 25)
-        self.assertEqual(nclat[0,0], 8.5)
-        self.assertEqual(nclat[2,2], 18.5)
-        self.assertEqual(ncvar.shape, (3, 3))
-        self.assertEqual(ncvar[0,1], 13)
-        self.assertEqual(ncvar[2,0], 32)
+        nclon = nc.variables['lon']
+        nclat = nc.variables['lat']
+        ncvar = nc.variables['dummy']
+        self.assertEqual(nclon.size, 1)
+        self.assertEqual(nclat.size, 1)
+        self.assertEqual(nclon[0], 19)
+        self.assertEqual(nclat[0], 13)
+        self.assertEqual(ncvar.shape, (1,))
+        self.assertAlmostEqual(ncvar[0], 21.4, delta=0.2)
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestSubsetWFS)
+suite = unittest.TestLoader().loadTestsFromTestCase(TestAveragerWFS)
 
 if __name__ == '__main__':
     run_result = unittest.TextTestRunner(verbosity=2).run(suite)

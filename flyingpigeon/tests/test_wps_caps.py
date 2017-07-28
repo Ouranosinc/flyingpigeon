@@ -21,6 +21,7 @@ def test_caps():
         # 'analogs_model',
         # 'analogs_reanalyse',
         # 'analogs_viewer',
+        'averager_WFS',
         # 'climatefactsheet',
         'fetch_resources',
         # 'indices_percentile,
