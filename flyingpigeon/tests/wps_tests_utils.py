@@ -273,7 +273,7 @@ def wps_response(wps_host, pywps_request, wps_client=None):
     Parameters
     ----------
     wps_host : string or None
-        url without the http:// prefix (e.g. 'localhost:8009').
+        url without the http:// prefix (e.g. 'localhost:8009/pywps').
         If set to None, will use the wps_client provided (required).
     pywps_request : string
         wps request starting with '?service=WPS&request=[...]'
@@ -290,7 +290,7 @@ def wps_response(wps_host, pywps_request, wps_client=None):
 
     if wps_host:
         url_request = Request(
-            url='http://{0}/pywps{1}'.format(wps_host, pywps_request))
+            url='http://{0}{1}'.format(wps_host, pywps_request))
         url_response = urlopen(url_request)
         return url_response.read()
     else:

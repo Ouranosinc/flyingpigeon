@@ -26,7 +26,10 @@ class TestSubsetWFS(unittest.TestCase):
         sys.path.append('/'.join(os.getcwd().split('/')[:-1]))
         from flyingpigeon.processes import SubsetWFS
         self.client = client_for(Service(processes=[SubsetWFS()]))
-        self.wps_host = None
+        if self.config_dict['wps_host']:
+            self.wps_host = self.config_dict['wps_host']
+        else:
+            self.wps_host = None
 
     def test_getcapabilities(self):
         html_response = wps_tests_utils.wps_response(

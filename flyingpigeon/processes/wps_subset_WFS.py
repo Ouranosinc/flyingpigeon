@@ -3,6 +3,10 @@ import shutil
 import time
 import json
 import tempfile
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
 
 from pywps import Process
 from pywps import LiteralInput
@@ -15,16 +19,63 @@ import netCDF4
 from shapely.geometry import shape
 
 
+# Copying a few recurring functions here for now to avoid conflicts,
+# Should be moved to something like utils.py for a proper pull request
+# eventually...
+
 def guess_main_variable(ncdataset):
-    # For now, let's just take the variable with highest dimensionality,
-    # to refine later
-    nd = 0
+    # The main variable is the one with highest dimensionality, if there are
+    # more than one, the one with the larger size is the main variable.
+
+    # Exclude time, lon, lat and variables that are defined as bounds
+    var_candidates = []
+    bnds_variables = []
     for var_name in ncdataset.variables:
+        if var_name in ['time', 'lon', 'lat']:
+            continue
+        ncvar = ncdataset.variables[var_name]
+        if hasattr(ncvar, 'bounds'):
+            bnds_variables.append(ncvar.bounds)
+        var_candidates.append(var_name)
+    var_candidates = list(set(var_candidates) - set(bnds_variables))
+
+    # Find main variable among the candidates
+    nd = -1
+    size = -1
+    for var_name in var_candidates:
         ncvar = ncdataset.variables[var_name]
         if len(ncvar.shape) > nd:
             main_var = var_name
             nd = len(ncvar.shape)
+            size = ncvar.size
+        elif (len(ncvar.shape) == nd) and (ncvar.size > size):
+            main_var = var_name
+            size = ncvar.size
     return main_var
+
+def opendap_or_download(resource, output_path=None):
+    try:
+        nc = netCDF4.Dataset(resource, 'r')
+        nc.close()
+    except:
+        response = urlopen(resource)
+        CHUNK = 16 * 1024
+        if not output_path:
+            output_path = os.getcwd()
+        output_file = os.path.join(output_path, os.path.basename(resource))
+        with open(output_file, 'wb') as f:
+            while True:
+                chunk = response.read(CHUNK)
+                if not chunk:
+                    break
+                f.write(chunk)
+        try:
+            nc = netCDF4.Dataset(output_file, 'r')
+            nc.close()
+        except:
+            raise IOError("This does not appear to be a valid NetCDF file.")
+        return output_file
+    return resource
 
 json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
@@ -81,7 +132,10 @@ class SubsetWFS(Process):
     def _handler(self, request, response):
         list_of_files = []
         for one_resource in request.inputs['resource']:
-            list_of_files.append(one_resource.data)
+            # Download if not opendap
+            nc_file = opendap_or_download(one_resource.data, '/tmp')
+            list_of_files.append(nc_file)
+
         if 'mosaic' in request.inputs:
             mosaic = request.inputs['mosaic'][0].data
         else:
@@ -93,7 +147,7 @@ class SubsetWFS(Process):
             geoserver = request.inputs['geoserver'][0].data
         else:
             geoserver = configuration.get_config_value(
-                "flyingpigeon", "geoserver")
+                "extra", "geoserver")
 
         try:
             conn = WebFeatureService(url=geoserver, version='2.0.0')
