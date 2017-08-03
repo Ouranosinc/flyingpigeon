@@ -79,7 +79,7 @@ def opendap_or_download(resource, output_path=None):
 
 json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
-url_path = configuration.get_config_value('flyingpigeon', 'base_url')
+url_path = configuration.get_config_value('extra', 'base_url')
 
 class SubsetWFS(Process):
     def __init__(self):

@@ -1,5 +1,5 @@
 flyingpigeon:
-  image: birdhouse/flyingpigeon
+  image: cd7f6d6acdd5
   environment:
     HOSTNAME: $HOSTNAME
     HTTP_PORT: $HTTP_PORT

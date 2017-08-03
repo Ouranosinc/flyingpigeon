@@ -28,7 +28,7 @@ def guess_main_variable(ncdataset):
 
 json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
-url_path = configuration.get_config_value('flyingpigeon', 'base_url')
+url_path = configuration.get_config_value('extra', 'base_url')
 
 class AveragerWFS(Process):
     def __init__(self):
@@ -93,7 +93,7 @@ class AveragerWFS(Process):
             geoserver = request.inputs['geoserver'][0].data
         else:
             geoserver = configuration.get_config_value(
-                "flyingpigeon", "geoserver")
+                "extra", "geoserver")
 
         try:
             conn = WebFeatureService(url=geoserver, version='2.0.0')
