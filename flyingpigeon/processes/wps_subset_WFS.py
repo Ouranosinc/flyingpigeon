@@ -79,7 +79,7 @@ def opendap_or_download(resource, output_path=None):
 
 json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
-url_path = configuration.get_config_value('extra', 'base_url')
+outputurl = configuration.get_config_value('server', 'outputurl')
 
 class SubsetWFS(Process):
     def __init__(self):
@@ -172,6 +172,7 @@ class SubsetWFS(Process):
                 #new_geom = new_geom.union(merge_geom)
         #geom = new_geom
 
+        url_path = configuration.get_config_value('extra', 'base_url')
         output_files = []
         output_urls = []
         for one_file in list_of_files:
@@ -193,11 +194,13 @@ class SubsetWFS(Process):
             mv_file = os.path.join(mv_dir, os.path.basename(ops))
             shutil.move(ops, mv_file)
             output_files.append(mv_file)
-            if 'url_path' not in locals():
-                url_path = 'file:///'
-            output_urls.append(os.path.join(
-                url_path, output_path.split('/')[-1], mv_dir.split('/')[-1],
-                os.path.basename(mv_file)))
+            if outputurl == 'file:///tmp':
+                disk_file = 'file:///' + mv_file.lstrip('/')
+                output_urls.append(disk_file)
+            else:
+                url_file = os.path.join(outputurl, os.path.basename(mv_dir),
+                                        os.path.basename(mv_file))
+                output_urls.append(url_file)
 
         # Here we construct a unique filename
         time_str = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

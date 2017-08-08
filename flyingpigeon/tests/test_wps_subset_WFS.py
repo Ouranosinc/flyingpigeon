@@ -86,16 +86,16 @@ class TestSubsetWFS(unittest.TestCase):
             json_data = json.loads(f1.read())
             f1.close()
         else:
-            json_data = wps_tests_utils.get_wps_xlink(output_json)
+            json_data = json.loads(wps_tests_utils.get_wps_xlink(output_json))
         output_netcdf = json_data[0]
         if output_netcdf[:7] == 'file://':
-            output_netcdf = output_netcdf[7:]
+            tmp_output_netcdf = output_netcdf[7:]
         else:
-            output_netcdf = '/tmp/testtmp.nc'
-            f1 = open(output_netcdf, 'w')
+            tmp_output_netcdf = '/tmp/testtmp.nc'
+            f1 = open(tmp_output_netcdf, 'w')
             f1.write(wps_tests_utils.get_wps_xlink(output_netcdf))
             f1.close()
-        nc = netCDF4.Dataset(output_netcdf,'r')
+        nc = netCDF4.Dataset(tmp_output_netcdf,'r')
         nclon = nc.variables['lon']
         nclat = nc.variables['lat']
         ncvar = nc.variables['dummy']

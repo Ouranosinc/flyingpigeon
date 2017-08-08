@@ -1,5 +1,5 @@
 flyingpigeon:
-  image: cd7f6d6acdd5
+  image: 0ed6a8c7ef5d
   environment:
     HOSTNAME: $HOSTNAME
     HTTP_PORT: $HTTP_PORT

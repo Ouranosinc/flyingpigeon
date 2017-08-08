@@ -28,7 +28,6 @@ def guess_main_variable(ncdataset):
 
 json_format = get_format('JSON')
 output_path = configuration.get_config_value('server', 'outputpath')
-url_path = configuration.get_config_value('extra', 'base_url')
 
 class AveragerWFS(Process):
     def __init__(self):
@@ -118,6 +117,7 @@ class AveragerWFS(Process):
                 #new_geom = new_geom.union(merge_geom)
         #geom = new_geom
 
+        url_path = configuration.get_config_value('extra', 'base_url')
         output_files = []
         output_urls = []
         for one_file in list_of_files:
@@ -143,7 +143,7 @@ class AveragerWFS(Process):
             mv_file = os.path.join(mv_dir, os.path.basename(ops))
             shutil.move(ops, mv_file)
             output_files.append(mv_file)
-            if 'url_path' not in locals():
+            if not url_path:
                 url_path = 'file:///'
             output_urls.append(os.path.join(
                 url_path, output_path.split('/')[-1], mv_dir.split('/')[-1],
