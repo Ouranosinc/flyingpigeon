@@ -132,8 +132,7 @@ class TestSubsetWFS(unittest.TestCase):
         # pairing0.1.1-montreal_circles0.1.1
         config_dict = wps_tests_utils.config_is_available(
             'pairing0.1.1-montreal_circles0.1.1',
-            ['opendap_path', 'fileserver_path', 'geoserver',
-             'test_default_geoserver'],
+            ['opendap_path', 'fileserver_path', 'test_default_geoserver'],
             self.config, set_wps_host=True)
 
         # let's start with one example...
@@ -144,11 +143,10 @@ class TestSubsetWFS(unittest.TestCase):
         wps_request = (
             '?service=WPS&request=execute&version=1.0.0&'
             'identifier=subset_WFS&DataInputs=resource={0};'
-            'typename={1};featureids={2};geoserver={3}').format(
+            'typename={1};featureids={2}').format(
                 resource,
                 'testgeom:montreal_circles',
-                'montreal_circles.43',
-                config_dict['geoserver'])
+                'montreal_circles.43')
 
         html_response = wps_tests_utils.wps_response(
             config_dict['wps_host'], wps_request, self.client)
