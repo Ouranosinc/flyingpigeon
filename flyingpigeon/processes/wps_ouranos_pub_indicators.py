@@ -17,6 +17,7 @@ from ocgis.conv.nc import NcConverter
 import uuid
 
 import logging
+import traceback
 LOGGER = logging.getLogger("PYWPS")
 
 class Average(base.AbstractMultivariateFunction):
@@ -229,7 +230,10 @@ class OuranosPublicIndicatorProcess(Process, object):
                                 calc_grouping=calc_group,
                                 )
 
-            scs.append(ops.execute())
+            try:
+                scs.append(ops.execute())
+            except:
+                raise Exception(traceback.format_exc())
 
         out = scs[0]
         outfield = out.get_element()

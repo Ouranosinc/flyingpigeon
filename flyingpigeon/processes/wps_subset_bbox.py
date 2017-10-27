@@ -50,6 +50,11 @@ class SubsetBboxProcess(Process):
                          abstract=('Name of the variable in the NetCDF file.'
                                    'Will be guessed if not provided.'),
                          data_type='string',
+                         min_occurs=0),
+            LiteralInput('nc_format',
+                         'NetCDF format',
+                         abstract='NetCDF format.',
+                         data_type='string',
                          min_occurs=0)]
 
         outputs = [

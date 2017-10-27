@@ -92,6 +92,12 @@ def wfs_common(request, response, mode, spatial_mode='wfs'):
     else:
         tr = None
 
+    if 'nc_format' in request.inputs:
+        nc_format = request.inputs['nc_format'][0].data
+        output_format_options = {'data_model': nc_format}
+    else:
+        output_format_options = None
+
     try:
         output_files = []
         output_urls = []
@@ -127,6 +133,7 @@ def wfs_common(request, response, mode, spatial_mode='wfs'):
                             spatial_operation='clip', aggregate=True,
                             time_range=tr, output_format='nc',
                             interpolate_spatial_bounds=True,
+                            output_format_options=output_format_options,
                             prefix=file_prefix).execute()
                     except ExtentError:
                         continue
@@ -139,6 +146,7 @@ def wfs_common(request, response, mode, spatial_mode='wfs'):
                             dataset=rd, geom=ocgis_geom, time_range=tr,
                             output_format='nc',
                             interpolate_spatial_bounds=True,
+                            output_format_options=output_format_options,
                             prefix=file_prefix).execute()
                     except ExtentError:
                         continue
