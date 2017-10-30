@@ -2,6 +2,8 @@ import traceback
 
 from pywps import Process, ComplexInput, ComplexOutput, Format
 
+import netCDF4
+
 import ocgis
 from ocgis import RequestDataset, OcgOperations
 from flyingpigeon.utils import archiveextract, rename_complexinputs
@@ -45,7 +47,14 @@ class NCMergeProcess(Process):
             ocgis.env.OVERWRITE = True
             nc_files = archiveextract(resource=rename_complexinputs(
                 request.inputs['resource']))
-            rd = RequestDataset(nc_files)
+            close_mf = False
+            try:
+                rd = RequestDataset(nc_files)
+            except IOError:
+                # Suggestion for when the time dimension is not unlimited
+                mfnc = netCDF4.MFDataset(nc_files, 'r', aggdim='time')
+                rd = RequestDataset(driver='nc', opened=mfnc)
+                close_mf = True
             rd.dimension_map.set_bounds('time', None)
             if nc_files[0][-3:] == '.nc':
                 out_prefix = nc_files[0][:-3] + '_merged'
@@ -54,6 +63,8 @@ class NCMergeProcess(Process):
             ops = OcgOperations(dataset=rd, output_format='nc',
                                 prefix=out_prefix)
             ret = ops.execute()
+            if close_mf:
+                mfnc.close()
             response.outputs['output'].file = ret
             response.outputs['output'].output_format = \
                 Format('application/x-netcdf')

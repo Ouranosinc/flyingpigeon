@@ -203,7 +203,7 @@ class OuranosPublicIndicatorProcess(Process, object):
         # Compute tas from tasmin and tasmax average
         rdn = RequestDataset(res['tasmin'])
         rdx = RequestDataset(res['tasmax'])
-        ops = OcgOperations(dataset=[rdn, rdx], calc=[{'func':'average', 'name':'tas', 'kwds':{'v1':'tasmin', 'v2':'tasmax'}}], output_format='nc')
+        ops = OcgOperations(dataset=[rdn, rdx], calc=[{'func':'average', 'name':'tas', 'kwds':{'v1':'tasmin', 'v2':'tasmax'}}], output_format='nc', output_format_options={'data_model': 'NETCDF4_CLASSIC'})
         res['tas'] = ops.execute()
 
         # Indices computation
@@ -228,7 +228,7 @@ class OuranosPublicIndicatorProcess(Process, object):
             ops = OcgOperations(dataset=rd,
                                 calc=val,
                                 calc_grouping=calc_group,
-                                )
+                                output_format_options={'data_model': 'NETCDF4_CLASSIC'})
 
             try:
                 scs.append(ops.execute())
@@ -247,7 +247,8 @@ class OuranosPublicIndicatorProcess(Process, object):
         dir_output = abspath(curdir)
         prefix = str(uuid.uuid1())
         env.PREFIX = prefix
-        conv = NcConverter([out], outdir=dir_output, prefix=prefix)
+        conv = NcConverter([out], outdir=dir_output, prefix=prefix,
+                           options={'data_model': 'NETCDF4_CLASSIC'})
         conv.write()
 
         response.outputs['output_netcdf'].file = conv.path
