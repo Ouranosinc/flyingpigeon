@@ -14,8 +14,8 @@ transfer_limit_Mb = 100
 import logging
 logger = logging.getLogger()
 
-class ProcessCompoundIndice(WPSProcess):
 
+class ProcessCompoundIndice(WPSProcess):
 
     def __init__(self):
         WPSProcess.__init__(self,
@@ -30,21 +30,21 @@ class ProcessCompoundIndice(WPSProcess):
                             storeSupported = True,
                             statusSupported = True,
                             grassLocation =False)
-        
-        
+
+
         self.indiceNameIn = self.addLiteralInput(identifier = 'indiceName',
                                                 title = 'Index name',
                                                 type=type("String"),
                                                 default = 'CW')
         self.indiceNameIn.values = ['CD', 'CW', 'WD', 'WW']
-        
-        
+
+
         self.sliceModeIn = self.addLiteralInput(identifier = 'sliceMode',
                                                title = 'Slice mode (temporal grouping to apply to calculations)',
                                                type=type("String"),
                                                default = 'year')
-        self.sliceModeIn.values = ["year","month","ONDJFM","AMJJAS","DJF","MAM","JJA","SON"]        
-        
+        self.sliceModeIn.values = ["year","month","ONDJFM","AMJJAS","DJF","MAM","JJA","SON"]
+
         self.filesBasePeriodTemperatureIn = self.addLiteralInput(identifier = 'filesBasePeriodTemperature',
                                                 title = 'Input netCDF files list (base (reference) period), daily mean temperature',
                                                 abstract="application/netcdf",
@@ -55,36 +55,36 @@ class ProcessCompoundIndice(WPSProcess):
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/tas_day_EC-EARTH_rcp26_r8i1p1_20260101-20501231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/tas_day_EC-EARTH_rcp26_r8i1p1_20510101-20751231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/tas_day_EC-EARTH_rcp26_r8i1p1_20760101-21001231.nc')
-        
+
         self.filesBasePeriodPrecipitationIn = self.addLiteralInput(identifier = 'filesBasePeriodPrecipitation',
                                                 title = 'Input netCDF files list (base (reference) period), daily precipitation amount',
                                                 abstract="application/netcdf",
                                                 type=type("S"),
                                                 minOccurs=0,
-                                                maxOccurs=1024,                                                
+                                                maxOccurs=1024,
                                                 default = 'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20060101-20251231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20260101-20501231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20510101-20751231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20760101-21001231.nc')
 
-        self.timeRangeBasePeriodIn = self.addLiteralInput(identifier = 'timeRangeBasePeriod', 
+        self.timeRangeBasePeriodIn = self.addLiteralInput(identifier = 'timeRangeBasePeriod',
                                                 title = 'Time range of base (reference) period',
                                                 abstract = 'Mandatory time range of base (reference) period, e.g. 1961-01-01/1990-12-31. Please fill in.',
                                                 type = type("String"),
                                                 minOccurs = 1,
-                                                default = '1961-01-01/1990-12-31')                                                 
+                                                default = '1961-01-01/1990-12-31')
 
-                                                
+
         self.varNameTemperatureIn = self.addLiteralInput(identifier = 'varNameTemperature',
                                                 title = 'Variable name to process (daily mean temperature)',
                                                 type=type("String"),
                                                 default = 'tas')
-        
+
         self.varNamePrecipitationIn = self.addLiteralInput(identifier = 'varNamePrecipitation',
                                                 title = 'Variable name to process (daily precipitation amount)',
                                                 type=type("String"),
                                                 default = 'pr')
-        
+
         self.filesStudyPeriodTemperatureIn = self.addLiteralInput(identifier = 'filesStudyPeriodTemperature',
                                                 title = 'Input netCDF files list (study period), daily mean temperature',
                                                 abstract="application/netcdf",
@@ -106,14 +106,14 @@ class ProcessCompoundIndice(WPSProcess):
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20260101-20501231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20510101-20751231.nc,' +
                                                            'http://opendap.knmi.nl/knmi/thredds/dodsC/IS-ENES/TESTSETS/pr_day_EC-EARTH_rcp26_r8i1p1_20760101-21001231.nc')
-        
-        
-        self.timeRangeStudyPeriodIn = self.addLiteralInput(identifier = 'timeRangeStudyPeriod', 
+
+
+        self.timeRangeStudyPeriodIn = self.addLiteralInput(identifier = 'timeRangeStudyPeriod',
                                                 title = 'Time range',
                                                 abstract = 'Time range is mandatory, e.g. 2010-01-01/2012-12-31. Please fill in.',
                                                 type=type("String"),
                                                 minOccurs = 1,
-                                                default = '2010-01-01/2012-12-31')                                                 
+                                                default = '2010-01-01/2012-12-31')
 
         self.leapNonLeapYearsIn = self.addLiteralInput(
             identifier = 'leapNonLeapYears',
@@ -124,14 +124,14 @@ class ProcessCompoundIndice(WPSProcess):
             maxOccurs=1,
             default = False)
         #self.leapNonLeapYearsIn.values = ["take all years (leap and non-leap)","take only leap years"]
-        
-        
+
+
         ## self.outputFileNameIn = self.addLiteralInput(identifier = 'outputFileName', 
         ##                                         title = 'Name of output netCDF file',
         ##                                         type="String",
         ##                                         default = './out_icclim.nc')
-        
-        self.NLevelIn = self.addLiteralInput(identifier = 'NLevel', 
+
+        self.NLevelIn = self.addLiteralInput(identifier = 'NLevel',
                                                 title = 'Number of levels (if 4D variable)',
                                                 minOccurs = 0,
                                                 type=type(1))
@@ -144,80 +144,80 @@ class ProcessCompoundIndice(WPSProcess):
             formats=[{"mimeType":"application/x-netcdf"}],
             asReference=True,
         )
-        
-        
+
+
     def callback(self,message,percentage):
-        self.status.set("%s" % str(message),str(percentage));        
-                                
-                                
+        self.status.set("%s" % str(message),str(percentage));
+
+
     def execute(self):
         # Very important: This allows the NetCDF library to find the users credentials (X509 cert)
         #homedir = os.environ['HOME']
         #os.chdir(homedir)
-        
+
         def callback(b):
-            self.callback("Processing",b)           
-                    
-    
+            self.callback("Processing",b)
+
+
         in_files_t = []
         in_files_t.extend(self.filesBasePeriodTemperatureIn.getValue())
-        
+
         in_files_p = []
         in_files_p.extend(self.filesBasePeriodPrecipitationIn.getValue())
-        
+
         time_range_base_period = self.timeRangeBasePeriodIn.getValue()
         time_range_study_period = self.timeRangeStudyPeriodIn.getValue()
-        
+
         var_name_t = self.varNameTemperatureIn.getValue()
         var_name_p = self.varNamePrecipitationIn.getValue()
-        
+
         indice_name = self.indiceNameIn.getValue()
-        
+
         in_files_t.extend(self.filesStudyPeriodTemperatureIn.getValue())
-        
+
         in_files_p.extend(self.filesStudyPeriodPrecipitationIn.getValue())
-    
+
         leap_nonleap_years = self.leapNonLeapYearsIn.getValue()
-    
+
         slice_mode = self.sliceModeIn.getValue()
         #out_file_name = self.outputFileNameIn.getValue()
         out_file_name = 'out.nc'
         level = self.NLevelIn.getValue()
-        
+
         if time_range_base_period:
             startdate = dateutil.parser.parse(time_range_base_period.split("/")[0])
             stopdate  = dateutil.parser.parse(time_range_base_period.split("/")[1])
             time_range_base_period = [startdate,stopdate]
-        
-        
+
+
         if time_range_study_period:
             startdate = dateutil.parser.parse(time_range_study_period.split("/")[0])
             stopdate  = dateutil.parser.parse(time_range_study_period.split("/")[1])
             time_range_study_period = [startdate,stopdate]
-        
-        
+
+
         #home = expanduser("~")
-        
+
         self.status.set("Preparing....", 0)
-        
+
         #pathToAppendToOutputDirectory = "/WPS_"+self.identifier+"_" + datetime.now().strftime("%Y%m%dT%H%M%SZ")
-        
+
         """ URL output path """
         #fileOutURL  = os.environ['POF_OUTPUT_URL']  + pathToAppendToOutputDirectory+"/"
-        
+
         """ Internal output path"""
         #fileOutPath = os.environ['POF_OUTPUT_PATH']  + pathToAppendToOutputDirectory +"/"
 
         """ Create output directory """
         #mkdir_p(fileOutPath)
-        
-        self.status.set("Processing input lists: " + str(in_files_t) +  " " + str(in_files_p), 0)  
+
+        self.status.set("Processing input lists: " + str(in_files_t) +  " " + str(in_files_p), 0)
 
         # CW (cold/wet days): (TG < 25th pctl) and (RR > 75th pctl)
         # CD (cold/dry days): (TG < 25th pctl) and (RR < 25th pctl)
         # WD (warm/dry days): (TG > 75th pctl) and (RR < 25th pctl)
         # WW (warm/wet days): (TG > 75th pctl) and (RR > 75th pctl)
-        
+
         if indice_name == 'CW':
             logical_operation = ['lt', 'gt']
             thresh = ['p25', 'p75']
@@ -230,7 +230,7 @@ class ProcessCompoundIndice(WPSProcess):
         elif indice_name == 'WW':
             logical_operation = ['gt', 'gt']
             thresh = ['p75', 'p75']
-            
+
         my_indice_params = {'indice_name': indice_name,
                             'calc_operation': 'nb_events', ### 'calc_operation': 'max_nb_consecutive_events'
                             'logical_operation': logical_operation,
@@ -257,7 +257,7 @@ class ProcessCompoundIndice(WPSProcess):
                       interpolation='hyndman_fan',
                       out_unit='days')
 
-                    
+
         """ Set output """
         #url = fileOutURL+"/"+out_file_name
         #self.opendapURL.setValue(url)

@@ -14,7 +14,7 @@ import logging
 LOGGER = logging.getLogger("PYWPS")
 
 
-class ClipcontinentProcess(Process):
+class SubsetcontinentProcess(Process):
     """
     TODO: opendap input support, additional metadata to display region names.
     """
@@ -68,7 +68,7 @@ class ClipcontinentProcess(Process):
                           )
         ]
 
-        super(ClipcontinentProcess, self).__init__(
+        super(SubsetcontinentProcess, self).__init__(
             self._handler,
             identifier="subset_continents",
             title="Subset (Continents)",

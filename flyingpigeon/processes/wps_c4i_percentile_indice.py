@@ -16,8 +16,8 @@ transfer_limit_Mb = 100
 import logging
 logger = logging.getLogger()
 
-class ProcessPercentileIndice(WPSProcess):
 
+class ProcessPercentileIndice(WPSProcess):
 
     def __init__(self):
         WPSProcess.__init__(self,

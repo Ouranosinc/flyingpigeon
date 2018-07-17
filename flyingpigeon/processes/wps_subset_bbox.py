@@ -64,7 +64,7 @@ class SubsetBboxProcess(Process):
         super(SubsetBboxProcess, self).__init__(
             self._handler,
             identifier='subset_bbox',
-            title='Subset',
+            title='Subset (Bounding Box)',
             version='0.1',
             abstract=('Return the data for which grid cells intersect the '
                       'bounding box for each input dataset as well as'

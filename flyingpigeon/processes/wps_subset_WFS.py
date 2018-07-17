@@ -58,7 +58,7 @@ class SubsetWFSProcess(Process):
         super(SubsetWFSProcess, self).__init__(
             self._handler,
             identifier='subset_WFS',
-            title='Subset WFS',
+            title='Subset (WFS)',
             version='0.1',
             abstract=('Return the data for which grid cells intersect the '
                       'selected polygon for each input dataset.'),

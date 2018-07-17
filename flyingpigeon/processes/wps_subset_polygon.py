@@ -9,7 +9,7 @@ from flyingpigeon.handler_common import wfs_common
 json_format = get_format('JSON')
 
 
-class SubsetProcess(Process):
+class SubsetpolygonProcess(Process):
     """Subset a NetCDF file using WFS geometry."""
 
     def __init__(self):
@@ -70,13 +70,13 @@ class SubsetProcess(Process):
                           as_reference=True,
                           supported_formats=[json_format])]
 
-        super(SubsetProcess, self).__init__(
+        super(SubsetpolygonProcess, self).__init__(
             self._handler,
             identifier='subset',
-            title='Subset',
+            title='Subset (Polygons)',
             version='0.1',
             abstract=('Return the data for which grid cells intersect the '
-                      'selected polygon for each input dataset as well as'
+                      'selected polygon for each input data set as well as'
                       'the time range selected.'),
             inputs=inputs,
             outputs=outputs,

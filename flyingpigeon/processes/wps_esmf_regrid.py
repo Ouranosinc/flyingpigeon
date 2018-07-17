@@ -127,7 +127,7 @@ class ESMFRegridProcess(Process):
         super(ESMFRegridProcess, self).__init__(
             self._handler,
             identifier="esmf_regrid",
-            title="ESMF regridding",
+            title="ESMF Regridding",
             abstract='Regrid netCDF files to a destination grid.',
             version="0.10",
             metadata=[

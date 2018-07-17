@@ -1,6 +1,6 @@
-from .wps_subset_countries import ClippingProcess
-from .wps_subset_continents import ClipcontinentProcess
-from .wps_subset_regionseurope import ClipregionseuropeProcess
+from .wps_subset_countries import SubsetcountryProcess
+from .wps_subset_continents import SubsetcontinentProcess
+from .wps_subset_europe import SubseteuropeProcess
 from .wps_pointinspection import PointinspectionProcess
 from .wps_landseamask import LandseamaskProcess
 # from .wps_climatefactsheet import FactsheetProcess
@@ -24,7 +24,7 @@ from .wps_plot_timeseries import PlottimeseriesProcess
 from .wps_segetalflora import SegetalfloraProcess
 from .wps_spatial_analog import SpatialAnalogProcess
 from .wps_map_spatial_analog import MapSpatialAnalogProcess
-from .wps_subset import SubsetProcess
+from .wps_subset_polygon import SubsetpolygonProcess
 from .wps_averager import AveragerProcess
 from .wps_subset_WFS import SubsetWFSProcess
 from .wps_averager_WFS import AveragerWFSProcess
@@ -38,15 +38,15 @@ from .wps_ocgis_func import OCGIS_INDEX_PROCESSES  # This stores all the process
 # from .wps_EO_merge import MergeProcess
 from .wps_EO_COPERNICUS_search import EO_COP_searchProcess
 from .wps_EO_COPERNICUS_fetch import EO_COP_fetchProcess
-from .wps_regrid import ESMFRegridProcess
+from .wps_esmf_regrid import ESMFRegridProcess
 from .wps_EO_COPERNICUS_rgb import EO_COP_rgbProcess
 from .wps_EO_COPERNICUS_indices import EO_COP_indicesProcess
-from .wps_kddm_bc import KDDM_BC_Process
+from .wps_kddm_bc import KDDMbiascorrectProcess
 
 processes = [
-    ClippingProcess(),
-    ClipcontinentProcess(),
-    ClipregionseuropeProcess(),
+    SubsetcountryProcess(),
+    SubsetcontinentProcess(),
+    SubseteuropeProcess(),
     PointinspectionProcess(),
     LandseamaskProcess(),
     # FactsheetProcess(),
@@ -70,7 +70,7 @@ processes = [
     SegetalfloraProcess(),
     SpatialAnalogProcess(),
     MapSpatialAnalogProcess(),
-    SubsetProcess(),
+    SubsetpolygonProcess(),
     AveragerProcess(),
     SubsetWFSProcess(),
     AveragerWFSProcess(),
@@ -86,7 +86,7 @@ processes = [
     EO_COP_indicesProcess(),
     # MergeProcess(),
     # NdviProcess(),
-    KDDM_BC_Process(),
+    KDDMbiascorrectProcess(),
     ] + OCGIS_INDEX_PROCESSES
 
 """

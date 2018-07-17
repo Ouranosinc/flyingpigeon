@@ -13,7 +13,7 @@ import logging
 LOGGER = logging.getLogger("PYWPS")
 
 
-class KDDM_BC_Process(Process):
+class KDDMbiascorrectProcess(Process):
     """
     References
     ----------
@@ -79,10 +79,10 @@ class KDDM_BC_Process(Process):
                           ),
         ]
 
-        super(KDDM_BC_Process, self).__init__(
+        super(KDDMbiascorrectProcess, self).__init__(
             self._handler,
             identifier='kddm_bc',
-            title="Kernel Density Distribution Mapping Bias Correction",
+            title="Bias Correction (Kernel Density Distribution Mapping)",
             abstract="Bias correction method using Kernel Density Distribution Mapping (KDDM).",
             version="1.0",
             inputs=inputs,
