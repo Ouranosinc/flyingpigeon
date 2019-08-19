@@ -5,6 +5,8 @@ Flying Pigeon
    :target: https://travis-ci.org/bird-house/flyingpigeon
    :alt: Travis Build
 
+This repository of FlyingPigeon was forked and developed by Ouranos over the course of development for PAVICS before being pushed back upstream in November 2018. This repository is now archived (in read-only mode). For all current development issues and releases, please refer to the upstream repository: https://github.com/bird-house/flyingpigeon
+----------------------------------------------------------------------------------------------------------------------------------
 
 Flying Pigeon (the bird)
   *The pigeon finds its way home over extremely long distances. [..].* (`Wikipedia <https://en.wikipedia.org/wiki/Pigeon_flying>`_).
